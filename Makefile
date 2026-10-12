@@ -84,17 +84,23 @@ clear: dlt-clear clear-data clear-rill
 clear-all: clear clear-clickhouse
 
 ## Connector switching helpers
+# BSD sed (macOS) requires a suffix for -i; GNU sed accepts -i.bak too.
+SED_INPLACE = sed -i.bak
+
 setup-connector-duckdb:
-	@sed -i 's/^olap_connector:.*$$/olap_connector: duckdb/' viz_rill/rill.yaml
-	@sed -i 's/^RILL_CONNECTOR=.*$$/RILL_CONNECTOR=""/' viz_rill/.env
+	@$(SED_INPLACE) 's/^olap_connector:.*$$/olap_connector: duckdb/' viz_rill/rill.yaml && rm -f viz_rill/rill.yaml.bak
+	@test -f viz_rill/.env || cp viz_rill/.env.example viz_rill/.env
+	@$(SED_INPLACE) 's/^RILL_CONNECTOR=.*$$/RILL_CONNECTOR=""/' viz_rill/.env && rm -f viz_rill/.env.bak
 
 setup-connector-clickhouse:
-	@sed -i 's/^olap_connector:.*$$/olap_connector: clickhouse/' viz_rill/rill.yaml
-	@sed -i 's/^RILL_CONNECTOR=.*$$/RILL_CONNECTOR="clickhouse"/' viz_rill/.env
+	@$(SED_INPLACE) 's/^olap_connector:.*$$/olap_connector: clickhouse/' viz_rill/rill.yaml && rm -f viz_rill/rill.yaml.bak
+	@test -f viz_rill/.env || cp viz_rill/.env.example viz_rill/.env
+	@$(SED_INPLACE) 's/^RILL_CONNECTOR=.*$$/RILL_CONNECTOR="clickhouse"/' viz_rill/.env && rm -f viz_rill/.env.bak
 
 setup-connector-motherduck:
-	@sed -i 's/^olap_connector:.*$$/olap_connector: motherduck/' viz_rill/rill.yaml
-	@sed -i 's/^RILL_CONNECTOR=.*$$/RILL_CONNECTOR="motherduck"/' viz_rill/.env
+	@$(SED_INPLACE) 's/^olap_connector:.*$$/olap_connector: motherduck/' viz_rill/rill.yaml && rm -f viz_rill/rill.yaml.bak
+	@test -f viz_rill/.env || cp viz_rill/.env.example viz_rill/.env
+	@$(SED_INPLACE) 's/^RILL_CONNECTOR=.*$$/RILL_CONNECTOR="motherduck"/' viz_rill/.env && rm -f viz_rill/.env.bak
 
 set-connector-duckdb:
 	@echo "Setting Rill connector to DuckDB..."
@@ -309,3 +315,33 @@ run-all-cloud: check-secrets run-etl-clickhouse anonymize-clickhouse serve-click
 	@echo "  COST_MULTIPLIER_MIN=2.0 COST_MULTIPLIER_MAX=8.0 DUPLICATE_ROWS=3"
 	@echo ""
 	@echo "================================================================================"
+
+## Docker
+# The project .env is for dlt. Compose uses docker/compose.env so it does not
+# interpolate those values.
+COMPOSE = docker compose --env-file docker/compose.env
+
+# demo: dashboards on bundled sample data at http://localhost:9009
+# serve: dashboards on local viz_rill/data
+# etl: pipelines write parquet into local viz_rill/data (needs .dlt/secrets.toml)
+docker-build:
+	$(COMPOSE) build
+
+docker-demo:
+	$(COMPOSE) up --build
+
+docker-serve:
+	@test -f viz_rill/.env || cp viz_rill/.env.example viz_rill/.env
+	@mkdir -p viz_rill/data
+	$(COMPOSE) run --rm --service-ports \
+		-v "$(CURDIR)/viz_rill/data:/app/viz_rill/data" \
+		-v "$(CURDIR)/viz_rill/.env:/app/viz_rill/.env" \
+		cloud-cost-analyzer serve
+
+docker-etl:
+	@test -f .dlt/secrets.toml || (echo "Missing .dlt/secrets.toml. Copy .dlt/secrets.toml.example and add credentials."; exit 1)
+	@mkdir -p viz_rill/data
+	$(COMPOSE) run --rm \
+		-v "$(CURDIR)/.dlt/secrets.toml:/app/.dlt/secrets.toml:ro" \
+		-v "$(CURDIR)/viz_rill/data:/app/viz_rill/data" \
+		cloud-cost-analyzer make run-etl

@@ -1,0 +1,23 @@
+.git
+.venv
+**/.venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+*.egg-info
+*.duckdb
+**/.DS_Store
+
+# Local secrets and generated data. Demo parquet stays in the image.
+.dlt/secrets.toml
+viz_rill/.env
+viz_rill/data
+viz_rill/tmp
+viz_rill/.rillcloud
+
+# Editor and agent files
+.idea
+.vscode
+.cursor
