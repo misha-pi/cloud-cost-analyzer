@@ -1,0 +1,16 @@
+# Start with `make docker-demo`. That command passes --env-file docker/compose.env
+# so Compose does not interpolate the dlt variables in the project-root .env.
+
+services:
+  cloud-cost-analyzer:
+    build:
+      context: .
+    image: cloud-cost-analyzer:local
+    ports:
+      - "${RILL_PORT:-9009}:9009"
+    environment:
+      RILL_PORT: "9009"
+    # demo loads bundled sample data and starts Rill.
+    # serve starts Rill against whatever is already in viz_rill/data.
+    # Any other command is executed as-is, for example: make run-etl
+    command: ["demo"]

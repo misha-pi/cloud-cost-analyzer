@@ -1,3 +1,2 @@
 type: connector
 driver: duckdb
-dsn: "cloud_cost_analytics.duckdb"
