@@ -17,3 +17,6 @@ wheels/
 
 viz_rill/data/*
 !viz_rill/data/.gitkeep
+
+# bigquery-emulator db
+bigquery-emulator/seed/emulator.db
