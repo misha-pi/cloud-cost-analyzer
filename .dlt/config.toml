@@ -48,8 +48,9 @@ normalized_data_dir = "viz_rill/data/aws_costs"  # Directory for normalized AWS 
 dataset = "billing_export"
 dataset_name = "gcp_costs"
 initial_start_date = "2025-09-01T00:00:00Z"  # Only load data from this date onwards (filters by export_time)
-# Load ONLY the resource-level (detailed) export. The standard export
-# (gcp_billing_export_v1_*) holds the same costs, so listing both double-counts.
+# List exactly ONE billing export table: the resource-level export
+# (gcp_billing_export_resource_v1_*, recommended: adds per-resource breakdowns) or the
+# standard export (gcp_billing_export_v1_*). They hold the same costs, so listing both double-counts.
 # Keep the placeholder here (this file is public) and set the real `dataset` and
 # `table_names` under [sources.gcp_billing] in .dlt/secrets.toml, which overrides this file.
 table_names = [
