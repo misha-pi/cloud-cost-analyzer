@@ -47,6 +47,16 @@ measures:
     expression: "SUM(cost)"
     format_preset: currency_usd
 
+  - name: total_credits
+    display_name: "Total Credits"
+    expression: "SUM(credits_total)"
+    format_preset: currency_usd
+
+  - name: total_net_cost
+    display_name: "Net Cost (after credits)"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd
+
   - name: total_usage
     display_name: "Total Usage"
     expression: "SUM(usage__amount)"
