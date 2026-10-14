@@ -15,6 +15,7 @@ Built-in realism, so the cost analysis tool has something to find:
   * gentle month-over-month growth
   * a cost anomaly: a BigQuery analysis spike in prod-data (configurable day)
   * credits as negative amounts: committed use discount, free tier, promotion
+  * rows with two credits (committed use + sustained use discount on prod CPU)
   * some resources without labels (unallocated cost)
 
 Why not the emulator's --data-from-yaml seed? In emulator v0.8.1 the YAML
@@ -268,6 +269,15 @@ def credits_for(project_id: str, service: str, sku: dict, cost: float) -> list:
             "full_name": "Committed use discount: CPU",
             "id": "committed-usage-discount-cpu",
             "type": "COMMITTED_USAGE_DISCOUNT",
+        })
+        # Second credit on the same row: real exports often stack discounts, and
+        # consumers must sum credits per row instead of joining them one by one.
+        out.append({
+            "name": "Sustained use discount",
+            "amount": round(-cost * 0.05, 6),
+            "full_name": "Sustained use discount",
+            "id": "sustained-usage-discount-cpu",
+            "type": "SUSTAINED_USAGE_DISCOUNT",
         })
     if service == "Cloud Run":
         out.append({

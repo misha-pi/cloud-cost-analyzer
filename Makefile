@@ -58,6 +58,8 @@ install: install-rill
 dlt-clear:
 	# rm -rf ~/.dlt/
 	rm -rf ~/.local/share/dlt/
+	# Newer dlt keeps pipeline state (incremental cursor) here
+	rm -rf ~/.dlt/pipelines/cloud_cost_analytics
 
 clear-data:
 	@if [ -f cloud_cost_analytics.duckdb ]; then \
