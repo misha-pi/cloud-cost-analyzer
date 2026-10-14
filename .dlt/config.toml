@@ -48,11 +48,12 @@ normalized_data_dir = "viz_rill/data/aws_costs"  # Directory for normalized AWS 
 dataset = "billing_export"
 dataset_name = "gcp_costs"
 initial_start_date = "2025-09-01T00:00:00Z"  # Only load data from this date onwards (filters by export_time)
-# Update these table names to match your GCP billing export tables
-# Find them in BigQuery Console under your billing_export dataset
+# Load ONLY the resource-level (detailed) export. The standard export
+# (gcp_billing_export_v1_*) holds the same costs, so listing both double-counts.
+# Keep the placeholder here (this file is public) and set the real `dataset` and
+# `table_names` under [sources.gcp_billing] in .dlt/secrets.toml, which overrides this file.
 table_names = [
-    "gcp_billing_export_resource_v1_014CCF_84D5DF_A43BC0",
-    "gcp_billing_export_v1_014CCF_84D5DF_A43BC0"
+    "gcp_billing_export_resource_v1_<BILLING_ACCOUNT_ID>"
 ]
 input_data_dir = "viz_rill/data/gcp_costs"  # Directory where GCP parquet files are loaded
 normalized_data_dir = "viz_rill/data/gcp_costs"  # Directory for normalized GCP data
