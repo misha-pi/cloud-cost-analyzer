@@ -130,7 +130,8 @@ run-stripe: check-secrets
 
 
 #run dlt incremental loads
-run-etl: check-secrets run-aws run-gcp run-stripe
+# Pipelines we run. Add new sources here (upstream also ran run-aws and run-stripe).
+run-etl: check-secrets run-gcp
 
 
 test-duplicates-duckdb:
