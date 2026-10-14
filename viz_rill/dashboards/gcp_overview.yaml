@@ -11,6 +11,8 @@ rows:
       - kpi_grid:
           measures:
             - total_cost
+            - total_credits
+            - total_net_cost
             - record_count
             - total_usage
             - cost_per_unit

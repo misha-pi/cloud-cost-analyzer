@@ -2,12 +2,32 @@
 import humanize
 from typing import Any
 import os
+import pathlib
 
 import dlt
+import pyarrow as pa
+import pyarrow.parquet as pq
 from dlt.common import pendulum
 
 from google.cloud import bigquery
 from google.oauth2 import service_account
+
+
+def ensure_credits_table(dataset_name: str) -> None:
+    """
+    The Rill GCP model joins the credits child table, which dlt only creates once a
+    loaded row has credits. Write an empty placeholder so the model always finds a file.
+    """
+    bucket_url = dlt.config["destination.filesystem.bucket_url"]
+    credits_dir = pathlib.Path(bucket_url) / dataset_name / "bigquery_billing_table__credits"
+    if any(credits_dir.glob("*.parquet")):
+        return
+    credits_dir.mkdir(parents=True, exist_ok=True)
+    empty = pa.table({
+        "_dlt_parent_id": pa.array([], pa.string()),
+        "amount": pa.array([], pa.float64()),
+    })
+    pq.write_table(empty, credits_dir / "_empty.parquet")
 
 def bigquery_billing_table(
     table_name: str,
@@ -106,6 +126,8 @@ def load_standalone_table_resource() -> None:
     # This will only load new records based on export_time
     # Use loader_file_format="parquet" in run() to generate parquet files
     info = pipeline.run(resources, loader_file_format="parquet")
+    if destination == "filesystem":
+        ensure_credits_table(dataset_name)
 
     # Print concise summary
     print(f"Pipeline {pipeline.pipeline_name} load step completed in {info}")
