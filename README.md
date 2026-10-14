@@ -17,26 +17,41 @@ Multi-cloud cost analytics platform combining AWS Cost and Usage Reports (CUR), 
 
 ## How to use BigQuery simulator
 
-Run the following commands to install and setup BigQuery simulator on your local machine:
+Test the GCP pipeline and dashboards locally with fake billing data, without real GCP credentials.
+
+**1. Start the emulator and generate data** (the data lives only while the container runs):
 
 ```bash
+docker run -d --name bq-emulator -p 127.0.0.1:9050:9050 -p 127.0.0.1:9060:9060 \
+  ghcr.io/goccy/bigquery-emulator:latest --project=billing-dev
+
 cd bigquery-emulator
-
-docker pull ghcr.io/goccy/bigquery-emulator:latest
-
-docker run -it -p 9050:9050 -p 9060:9060 \
-  -v "$(pwd)/seed:/seed" \
-  ghcr.io/goccy/bigquery-emulator:latest \
-  --project=billing-dev --data-from-yaml=/seed/billing.yaml \
-  --database=/seed/emulator.db
-
 pip3 install -r requirements.txt
-
 python3 generate_billing_seed.py --emulator http://localhost:9050 --days 30
-
-python3 verify_data.py 
-
+python3 verify_data.py   # optional: sample queries against the fake table
+cd ..
 ```
+
+**2. Point the pipeline at the fake table** in `.dlt/secrets.toml` (keep your real secrets elsewhere while testing):
+
+```toml
+[source.bigquery.credentials]
+project_id = "billing-dev"
+
+[sources.gcp_billing]
+dataset = "billing"
+table_names = ["gcp_billing_export_v1_FAKE00_000000_000000"]
+```
+
+**3. Load it and open the dashboards.** `BIGQUERY_EMULATOR_HOST` makes the pipeline use the emulator instead of real BigQuery:
+
+```bash
+make clear                                              # start from empty data and pipeline state
+BIGQUERY_EMULATOR_HOST=http://localhost:9050 make run-gcp
+make serve-duckdb                                       # http://localhost:9009
+```
+
+When done, run `docker rm -f bq-emulator` and `make clear` before loading real data.
 
 
 

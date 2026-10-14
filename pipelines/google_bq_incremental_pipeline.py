@@ -49,15 +49,23 @@ def bigquery_billing_table(
     def _load_table(
         incremental: dlt.sources.incremental[str] = dlt.sources.incremental("export_time", initial_value=initial_value)
     ):
-        # Get service account credentials from .dlt/secrets.toml
-        service_account_info = {
-            "project_id": dlt.secrets.get('source.bigquery.credentials.project_id'),
-            "private_key": dlt.secrets.get('source.bigquery.credentials.private_key'),
-            "client_email": dlt.secrets.get('source.bigquery.credentials.client_email'),
-            "token_uri": dlt.secrets.get('source.bigquery.credentials.token_uri'),
-        }
-        credentials = service_account.Credentials.from_service_account_info(service_account_info)
-        client = bigquery.Client(credentials=credentials, project=project_id)
+        emulator_host = os.getenv("BIGQUERY_EMULATOR_HOST")
+        if emulator_host:
+            # Local testing against bigquery-emulator (see README): no credentials needed
+            from google.api_core.client_options import ClientOptions
+            from google.auth.credentials import AnonymousCredentials
+            client = bigquery.Client(project=project_id, credentials=AnonymousCredentials(),
+                                     client_options=ClientOptions(api_endpoint=emulator_host))
+        else:
+            # Get service account credentials from .dlt/secrets.toml
+            service_account_info = {
+                "project_id": dlt.secrets.get('source.bigquery.credentials.project_id'),
+                "private_key": dlt.secrets.get('source.bigquery.credentials.private_key'),
+                "client_email": dlt.secrets.get('source.bigquery.credentials.client_email'),
+                "token_uri": dlt.secrets.get('source.bigquery.credentials.token_uri'),
+            }
+            credentials = service_account.Credentials.from_service_account_info(service_account_info)
+            client = bigquery.Client(credentials=credentials, project=project_id)
 
         # Get the last loaded value for incremental loading
         last_value = incremental.last_value
