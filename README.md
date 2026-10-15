@@ -40,6 +40,17 @@ python3 verify_data.py
 
 
 
+### Load sumulator data into dashboards
+
+From the repository root, with the emulator still running:
+
+```bash
+make run-gcp-emulator
+make serve
+```
+
+his writes parquet under `viz_rill/data/gcp_costs/` and opens Rill at [http://localhost:9009](http://localhost:9009). If a previous GCP load left pipeline state, run `make dlt-clear` first so rows are not skipped.
+
 ## Features
 
 - **Multi-Cloud Cost Tracking** - AWS, GCP, and future cloud providers
