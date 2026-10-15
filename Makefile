@@ -124,6 +124,14 @@ run-aws: check-secrets
 run-gcp: check-secrets
 	uv run python pipelines/google_bq_incremental_pipeline.py
 	echo "####################################################################"
+# Local BigQuery emulator (no .dlt/secrets.toml). Start the emulator first.
+run-gcp-emulator:
+	GCP_BILLING_API_ENDPOINT=http://localhost:9050 \
+	GCP_BILLING_PROJECT=billing-dev \
+	GCP_BILLING_DATASET=billing \
+	GCP_BILLING_TABLES=gcp_billing_export_v1_FAKE00_000000_000000 \
+	uv run python pipelines/google_bq_incremental_pipeline.py
+	echo "####################################################################"
 run-stripe: check-secrets
 	uv run python pipelines/stripe_pipeline.py
 	echo "####################################################################"
@@ -152,7 +160,7 @@ rill-deploy:
 	--prod-branch main \
 
 serve:
-	rill start viz_rill
+	rill start viz_rill --pull-env=false
 
 serve-duckdb: setup-connector-duckdb
 	@echo "Starting Rill with DuckDB connector..."

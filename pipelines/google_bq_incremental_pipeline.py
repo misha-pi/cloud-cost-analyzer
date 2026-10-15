@@ -9,6 +9,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from dlt.common import pendulum
 
+from google.api_core.client_options import ClientOptions
+from google.auth.credentials import AnonymousCredentials
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
@@ -29,11 +31,19 @@ def ensure_credits_table(dataset_name: str) -> None:
     })
     pq.write_table(empty, credits_dir / "_empty.parquet")
 
+
+def _utc_timestamp_literal(value) -> str:
+    """Format a cursor value as a UTC timestamp literal for the BigQuery emulator."""
+    ts = pendulum.parse(value) if isinstance(value, str) else pendulum.instance(value)
+    return ts.in_timezone("UTC").strftime("%Y-%m-%d %H:%M:%S.%f")
+
+
 def bigquery_billing_table(
     table_name: str,
     dataset: str = None,
     project_id: str = None,
     initial_start_date: str = None,
+    api_endpoint: str = None,
 ):
     """
     Load a BigQuery billing table incrementally using export_time as cursor
@@ -49,33 +59,49 @@ def bigquery_billing_table(
     def _load_table(
         incremental: dlt.sources.incremental[str] = dlt.sources.incremental("export_time", initial_value=initial_value)
     ):
-        # Get service account credentials from .dlt/secrets.toml
-        service_account_info = {
-            "project_id": dlt.secrets.get('source.bigquery.credentials.project_id'),
-            "private_key": dlt.secrets.get('source.bigquery.credentials.private_key'),
-            "client_email": dlt.secrets.get('source.bigquery.credentials.client_email'),
-            "token_uri": dlt.secrets.get('source.bigquery.credentials.token_uri'),
-        }
-        credentials = service_account.Credentials.from_service_account_info(service_account_info)
-        client = bigquery.Client(credentials=credentials, project=project_id)
-
         # Get the last loaded value for incremental loading
         last_value = incremental.last_value
 
-        query = f"""
-            SELECT * FROM `{project_id}.{dataset}.{table_name}`
-            WHERE export_time > @last_value
-            ORDER BY export_time
-        """
+        if api_endpoint:
+            # Local BigQuery emulator: no service account, and query parameters are unreliable.
+            client = bigquery.Client(
+                project=project_id,
+                client_options=ClientOptions(api_endpoint=api_endpoint),
+                credentials=AnonymousCredentials(),
+            )
+            ts = _utc_timestamp_literal(last_value)
+            query = f"""
+                SELECT * FROM `{project_id}.{dataset}.{table_name}`
+                WHERE export_time > TIMESTAMP '{ts}'
+                ORDER BY export_time
+            """
+            query_job = client.query(query)
+        else:
+            # Get service account credentials from .dlt/secrets.toml
+            service_account_info = {
+                "project_id": dlt.secrets.get('source.bigquery.credentials.project_id'),
+                "private_key": dlt.secrets.get('source.bigquery.credentials.private_key'),
+                "client_email": dlt.secrets.get('source.bigquery.credentials.client_email'),
+                "token_uri": dlt.secrets.get('source.bigquery.credentials.token_uri'),
+            }
+            credentials = service_account.Credentials.from_service_account_info(service_account_info)
+            client = bigquery.Client(credentials=credentials, project=project_id)
 
-        job_config = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("last_value", "TIMESTAMP", last_value)
-            ]
-        )
+            query = f"""
+                SELECT * FROM `{project_id}.{dataset}.{table_name}`
+                WHERE export_time > @last_value
+                ORDER BY export_time
+            """
+
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("last_value", "TIMESTAMP", last_value)
+                ]
+            )
+            query_job = client.query(query, job_config=job_config)
 
         print(f'Loading {table_name} (incremental from {last_value})...')
-        for row in client.query(query, job_config=job_config):
+        for row in query_job:
             yield {key: value for key, value in row.items()}
 
     # Set the resource name to 'bigquery_billing_table' to maintain consistent output directory
@@ -105,9 +131,24 @@ def load_standalone_table_resource() -> None:
     except KeyError:
         initial_start_date = None
 
-    project_id = dlt.secrets.get('source.bigquery.credentials.project_id')
-    dataset = dlt.config["sources.gcp_billing.dataset"]
-    table_names = dlt.config["sources.gcp_billing.table_names"]
+    # GCP_BILLING_API_ENDPOINT selects the local emulator. Unset, this is real BigQuery.
+    api_endpoint = os.getenv("GCP_BILLING_API_ENDPOINT") or None
+    if api_endpoint:
+        project_id = os.getenv("GCP_BILLING_PROJECT", "billing-dev")
+        dataset = os.getenv("GCP_BILLING_DATASET", "billing")
+        tables_raw = os.getenv(
+            "GCP_BILLING_TABLES",
+            "gcp_billing_export_v1_FAKE00_000000_000000",
+        )
+        table_names = [name.strip() for name in tables_raw.split(",") if name.strip()]
+    else:
+        project_id = os.getenv("GCP_BILLING_PROJECT") or dlt.secrets.get('source.bigquery.credentials.project_id')
+        dataset = os.getenv("GCP_BILLING_DATASET") or dlt.config["sources.gcp_billing.dataset"]
+        tables_raw = os.getenv("GCP_BILLING_TABLES")
+        if tables_raw:
+            table_names = [name.strip() for name in tables_raw.split(",") if name.strip()]
+        else:
+            table_names = dlt.config["sources.gcp_billing.table_names"]
 
     # Create pipeline with environment-driven destination
     # Local: destination="filesystem" writes parquet to viz_rill/data/
@@ -120,7 +161,7 @@ def load_standalone_table_resource() -> None:
     )
 
     # Create resources for each table with initial start date
-    resources = [bigquery_billing_table(table_name, dataset=dataset, project_id=project_id, initial_start_date=initial_start_date) for table_name in table_names]
+    resources = [bigquery_billing_table(table_name, dataset=dataset, project_id=project_id, initial_start_date=initial_start_date, api_endpoint=api_endpoint) for table_name in table_names]
 
     # Run the pipeline with incremental (append) write disposition
     # This will only load new records based on export_time
