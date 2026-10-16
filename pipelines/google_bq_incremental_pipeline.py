@@ -50,6 +50,10 @@ def ensure_labels_table(dataset_name: str) -> None:
     pq.write_table(empty, labels_dir / "_empty.parquet")
 
 
+# Print a line this often while reading BigQuery. The first row is always reported.
+_PROGRESS_EVERY_ROWS = 10_000
+
+
 def _utc_timestamp_literal(value) -> str:
     """Format a cursor value as a UTC timestamp literal for the BigQuery emulator."""
     ts = pendulum.parse(value) if isinstance(value, str) else pendulum.instance(value)
@@ -79,6 +83,10 @@ def bigquery_billing_table(
     ):
         # Get the last loaded value for incremental loading
         last_value = incremental.last_value
+        print(
+            f"Submitting query for {table_name} (export_time > {last_value})...",
+            flush=True,
+        )
 
         if api_endpoint:
             # Local BigQuery emulator: no service account, and query parameters are unreliable.
@@ -118,9 +126,20 @@ def bigquery_billing_table(
             )
             query_job = client.query(query, job_config=job_config)
 
-        print(f'Loading {table_name} (incremental from {last_value})...')
+        print(
+            f"BigQuery job {query_job.job_id} started; waiting for the first page of rows...",
+            flush=True,
+        )
+        row_count = 0
         for row in query_job:
+            row_count += 1
+            if row_count == 1 or row_count % _PROGRESS_EVERY_ROWS == 0:
+                print(
+                    f"Read {row_count:,} rows from {table_name}; latest export_time={row['export_time']}",
+                    flush=True,
+                )
             yield {key: value for key, value in row.items()}
+        print(f"Finished reading {row_count:,} rows from {table_name}", flush=True)
 
     # Set the resource name to 'bigquery_billing_table' to maintain consistent output directory
     return _load_table.with_name("bigquery_billing_table")
@@ -184,7 +203,7 @@ def load_standalone_table_resource() -> None:
     # Run the pipeline with incremental (append) write disposition
     # This will only load new records based on export_time
     # Use loader_file_format="parquet" in run() to generate parquet files
-    info = pipeline.run(resources, loader_file_format="parquet")
+    info = pipeline.run(resources, loader_file_format="parquet", progress="log")
     if destination == "filesystem":
         ensure_credits_table(dataset_name)
         ensure_labels_table(dataset_name)
