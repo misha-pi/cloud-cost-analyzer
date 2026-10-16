@@ -1,0 +1,52 @@
+# GCP cost by service and app, one month at a time (PI-18006).
+# Same two mirrored tables as the monthly sheet built with billing-helper;
+# apps are assigned by models/gcp_app_rules.sql.
+type: canvas
+display_name: "GCP Cost by Service and App"
+
+defaults:
+  time_range: rill-PM
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            Monthly GCP net cost (after credits) from the billing export: each service's cost split across apps,
+            and the same numbers with apps as rows. Pick a month in the time filter. Apps are assigned by the rules
+            in `models/gcp_app_rules.sql`; unmatched cost goes to **other** and Support is spread by cost share.
+            MongoDB Atlas is not included yet.
+        width: 12
+    height: 90px
+  - items:
+      - pivot:
+          metrics_view: gcp_app_cost_metrics
+          title: "Each service's cost by app (services as rows, apps as columns)"
+          row_dimensions: [service_name]
+          col_dimensions: [app]
+          measures: [total_net_cost]
+        width: 12
+    height: 440px
+  - items:
+      - pivot:
+          metrics_view: gcp_app_cost_metrics
+          title: "Each app's cost by service (apps as rows, services as columns)"
+          row_dimensions: [app]
+          col_dimensions: [service_name]
+          measures: [total_net_cost]
+        width: 12
+    height: 440px
+  - items:
+      - leaderboard:
+          metrics_view: gcp_app_cost_metrics
+          title: "% cost by app"
+          dimensions: [app]
+          measures: [total_net_cost]
+          num_rows: 40
+        width: 12
+    height: 400px
+
+time_ranges: [rill-PM, rill-MTD, P3M, P6M, P12M]
+filters:
+  enable: true
+
+theme: theme
