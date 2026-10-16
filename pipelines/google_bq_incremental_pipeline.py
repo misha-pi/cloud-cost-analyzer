@@ -32,6 +32,24 @@ def ensure_credits_table(dataset_name: str) -> None:
     pq.write_table(empty, credits_dir / "_empty.parquet")
 
 
+def ensure_labels_table(dataset_name: str) -> None:
+    """
+    The Rill labels model reads the labels child table, which dlt only creates once a
+    loaded row has labels. Write an empty placeholder so the model always finds a file.
+    """
+    bucket_url = dlt.config["destination.filesystem.bucket_url"]
+    labels_dir = pathlib.Path(bucket_url) / dataset_name / "bigquery_billing_table__labels"
+    if any(labels_dir.glob("*.parquet")):
+        return
+    labels_dir.mkdir(parents=True, exist_ok=True)
+    empty = pa.table({
+        "_dlt_parent_id": pa.array([], pa.string()),
+        "key": pa.array([], pa.string()),
+        "value": pa.array([], pa.string()),
+    })
+    pq.write_table(empty, labels_dir / "_empty.parquet")
+
+
 def _utc_timestamp_literal(value) -> str:
     """Format a cursor value as a UTC timestamp literal for the BigQuery emulator."""
     ts = pendulum.parse(value) if isinstance(value, str) else pendulum.instance(value)
@@ -169,6 +187,7 @@ def load_standalone_table_resource() -> None:
     info = pipeline.run(resources, loader_file_format="parquet")
     if destination == "filesystem":
         ensure_credits_table(dataset_name)
+        ensure_labels_table(dataset_name)
 
     # Print concise summary
     print(f"Pipeline {pipeline.pipeline_name} load step completed in {info}")

@@ -1,0 +1,31 @@
+# GCP cost per app and service (model: gcp_app_costs, rules: gcp_app_rules)
+version: 1
+type: metrics_view
+
+display_name: GCP Cost by App
+model: gcp_app_costs
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: app
+    display_name: App
+    column: app
+  - name: service_name
+    display_name: Service
+    column: service_name
+  - name: matched_by
+    display_name: Assigned by rule
+    column: matched_by
+    description: "Rule of gcp_app_rules that assigned the cost to the app (unmatched rows go to other)"
+  - name: app_key
+    display_name: Namespace / label / resource
+    column: app_key
+
+measures:
+  - name: total_net_cost
+    display_name: "Net cost"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd
+    valid_percent_of_total: true
+
