@@ -194,6 +194,7 @@ def load_standalone_table_resource() -> None:
         pipeline_name=pipeline_name,
         destination=destination,
         dataset_name=dataset_name,
+        progress="log",
         # export_schema_path="exported_schema/google_cost_schema.json"
     )
 
@@ -203,7 +204,7 @@ def load_standalone_table_resource() -> None:
     # Run the pipeline with incremental (append) write disposition
     # This will only load new records based on export_time
     # Use loader_file_format="parquet" in run() to generate parquet files
-    info = pipeline.run(resources, loader_file_format="parquet", progress="log")
+    info = pipeline.run(resources, loader_file_format="parquet")
     if destination == "filesystem":
         ensure_credits_table(dataset_name)
         ensure_labels_table(dataset_name)
