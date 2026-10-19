@@ -51,6 +51,17 @@ make serve
 
 his writes parquet under `viz_rill/data/gcp_costs/` and opens Rill at [http://localhost:9009](http://localhost:9009). If a previous GCP load left pipeline state, run `make dlt-clear` first so rows are not skipped.
 
+### What the GCP load reads
+
+To keep loads fast, `make run-gcp` does not read every column of the billing export:
+
+- Only the labels in `label_keys` (`.dlt/config.toml`, default `k8s-namespace` and `app`, the ones the
+  Rill models use) are loaded. Set `label_keys = []` to load every label, e.g. for `make gcp-dashboards`.
+- `system_labels`, `tags`, and the `project.ancestors` / `project.labels` arrays are not loaded.
+- Rows are downloaded with the BigQuery Storage Read API. The service account needs the
+  **BigQuery Read Session User** role for that; without it the load falls back to the slower REST
+  download and says so in its output. The emulator always uses REST.
+
 ### Demo data and real data
 
 `make demo` replaces `viz_rill/data/` with demo data and marks each dataset folder with a `_demo_data`
