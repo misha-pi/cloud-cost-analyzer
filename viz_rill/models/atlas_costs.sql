@@ -14,13 +14,24 @@ SELECT
   invoice_id,
   project_id,
   COALESCE(project_name, '(no project)') AS project_name,
-  -- "Orders - Production" -> app "Orders", environment "Production".
-  COALESCE(NULLIF(TRIM(SPLIT_PART(project_name, ' - ', 1)), ''), '(no project)') AS app,
+  -- Environment from the last " - " part of the project name, matched as a whole word (so "Devices"
+  -- is not "dev"): "Main App - MS - Production" -> Production, app "Main App - MS". The same rule is
+  -- used for GCP project IDs (metrics/gcp_cost_metrics.yaml).
   CASE WHEN project_name IS NULL THEN '(org level)'
-       ELSE COALESCE(NULLIF(TRIM(SPLIT_PART(project_name, ' - ', 2)), ''), '(none)') END AS environment,
+       WHEN REGEXP_MATCHES(LOWER(env_part), '(^|[^a-z0-9])(prod|production|prd)([^a-z0-9]|$)') THEN 'Production'
+       WHEN REGEXP_MATCHES(LOWER(env_part), '(^|[^a-z0-9])(staging|stage|stg)([^a-z0-9]|$)') THEN 'Staging'
+       WHEN REGEXP_MATCHES(LOWER(env_part), '(^|[^a-z0-9])(dev|development)([^a-z0-9]|$)') THEN 'Development'
+       WHEN REGEXP_MATCHES(LOWER(env_part), '(^|[^a-z0-9])(test|testing|qa|e2e)([^a-z0-9]|$)') THEN 'Test'
+       ELSE 'Other' END AS environment,
+  CASE WHEN project_name IS NULL THEN '(no project)'
+       WHEN project_name LIKE '% - %' THEN REGEXP_REPLACE(project_name, '\s+-\s+[^-]*$', '')
+       ELSE project_name END AS app,
   cluster,
   is_cluster_cost,
   CASE WHEN is_cluster_cost THEN cluster ELSE '(no cluster)' END AS cluster_label,
+  -- The same cluster name exists in several projects (Production, Staging, ...): label it with its
+  -- environment, e.g. "kyc (Production)".
+  CASE WHEN is_cluster_cost THEN cluster || ' (' || environment || ')' ELSE '(no cluster)' END AS cluster_env,
   COALESCE(project_name, '(no project)') || ' / '
     || CASE WHEN is_cluster_cost THEN cluster ELSE '(no cluster)' END AS project_cluster,
   category,
@@ -32,5 +43,8 @@ SELECT
   quantity,
   CAST(unit_price_dollars AS DOUBLE) AS unit_price_dollars,
   CAST(cost AS DOUBLE) AS cost
-FROM {{ ref "atlas_line_items_raw" }}
+FROM (
+  SELECT *, TRIM(REGEXP_EXTRACT(project_name, '([^-]*)$', 1)) AS env_part
+  FROM {{ ref "atlas_line_items_raw" }}
+)
 WHERE cost IS NOT NULL

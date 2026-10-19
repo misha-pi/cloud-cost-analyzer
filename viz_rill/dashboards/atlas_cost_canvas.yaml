@@ -30,6 +30,7 @@ rows:
               org_level_cost,
               avg_daily_cost,
               cluster_count,
+              cluster_name_count,
               instance_hours,
             ]
           comparison: [delta, percent_change]
@@ -49,7 +50,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
-            field: cluster_label
+            field: cluster_env
             type: nominal
             limit: 12
         width: 8
