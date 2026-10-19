@@ -50,6 +50,37 @@ rows:
         width: 4
     height: 360px
   - items:
+      - stacked_bar:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Cost by environment and provider"
+          x:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          y:
+            field: environment
+            type: nominal
+            sort: "-x"
+          color:
+            field: provider
+            type: nominal
+        width: 6
+      - stacked_bar:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Cost over time by environment"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: environment
+            type: nominal
+        width: 6
+    height: 360px
+  - items:
       - leaderboard:
           metrics_view: cloud_provider_cost_metrics
           title: "Top GCP projects and Atlas clusters"

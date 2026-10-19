@@ -14,6 +14,17 @@ dimensions:
   - name: service
     display_name: Service / category
     column: service
+  - name: environment
+    display_name: Environment
+    description: "From the GCP project ID or the Atlas project name (whole words: prod, staging, dev, test)"
+    expression: |
+      CASE
+        WHEN component LIKE '(no project)%' THEN '(org level)'
+        WHEN REGEXP_MATCHES(LOWER(component), '(^|[^a-z0-9])(prod|production|prd)([^a-z0-9]|$)') THEN 'Production'
+        WHEN REGEXP_MATCHES(LOWER(component), '(^|[^a-z0-9])(staging|stage|stg)([^a-z0-9]|$)') THEN 'Staging'
+        WHEN REGEXP_MATCHES(LOWER(component), '(^|[^a-z0-9])(dev|development)([^a-z0-9]|$)') THEN 'Development'
+        WHEN REGEXP_MATCHES(LOWER(component), '(^|[^a-z0-9])(test|testing|qa|e2e)([^a-z0-9]|$)') THEN 'Test'
+        ELSE 'Other' END
   - name: component
     display_name: Project / cluster
     column: component

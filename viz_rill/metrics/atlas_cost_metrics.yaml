@@ -8,8 +8,12 @@ timeseries: date
 smallest_time_grain: "day"
 
 dimensions:
-  - name: cluster_label
+  - name: cluster_env
     display_name: Cluster
+    column: cluster_env
+    description: "Cluster name with its environment, e.g. kyc (Production)"
+  - name: cluster_label
+    display_name: Cluster name (all environments)
     column: cluster_label
     description: "Atlas cluster name. The same name can exist in several projects; see Project / cluster"
   - name: project_cluster
@@ -71,8 +75,13 @@ measures:
     expression: "SUM(cost) / NULLIF(COUNT(DISTINCT date), 0)"
     format_preset: currency_usd
   - name: cluster_count
-    display_name: "Clusters"
+    display_name: "Clusters (per project)"
     expression: "COUNT(DISTINCT CASE WHEN is_cluster_cost THEN project_cluster END)"
+    format_preset: humanize
+  - name: cluster_name_count
+    display_name: "Cluster names"
+    expression: "COUNT(DISTINCT CASE WHEN is_cluster_cost THEN cluster END)"
+    description: "Distinct cluster names; one name can be a cluster in several projects"
     format_preset: humanize
   - name: instance_hours
     display_name: "Instance hours"
