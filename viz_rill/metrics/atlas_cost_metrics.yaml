@@ -1,0 +1,94 @@
+# MongoDB Atlas cost per day, project, cluster and SKU (model: atlas_costs)
+version: 1
+type: metrics_view
+
+display_name: MongoDB Atlas Cost
+model: atlas_costs
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: cluster_label
+    display_name: Cluster
+    column: cluster_label
+    description: "Atlas cluster name. The same name can exist in several projects; see Project / cluster"
+  - name: project_cluster
+    display_name: Project / cluster
+    column: project_cluster
+  - name: project_name
+    display_name: Project
+    column: project_name
+  - name: app_name
+    display_name: App
+    column: app
+    description: "Project name before ' - ', e.g. Orders for 'Orders - Production'"
+  - name: environment
+    display_name: Environment
+    column: environment
+    description: "Project name after ' - ', e.g. Production or Staging"
+  - name: category
+    display_name: Category
+    column: category
+    description: "Atlas billing category: Instances, Storage, Backup, Data Transfer, Support, ..."
+  - name: sku
+    display_name: SKU
+    column: sku
+  - name: unit
+    display_name: Unit
+    column: unit
+  - name: instance_size
+    display_name: Instance size
+    column: instance_size
+    description: "Cluster tier (M10, M30, ...); empty for lines that are not an instance"
+  - name: provider
+    display_name: Cloud provider
+    column: provider
+  - name: month
+    display_name: Month
+    column: month
+  - name: year
+    display_name: Year
+    column: year
+
+measures:
+  - name: total_cost
+    display_name: "Atlas cost"
+    expression: "SUM(cost)"
+    format_preset: currency_usd
+    valid_percent_of_total: true
+  - name: cluster_cost
+    display_name: "Cluster cost"
+    expression: "SUM(CASE WHEN is_cluster_cost THEN cost ELSE 0 END)"
+    description: "Cost billed to a cluster (excludes org-level lines such as Support)"
+    format_preset: currency_usd
+  - name: org_level_cost
+    display_name: "Org-level cost"
+    expression: "SUM(CASE WHEN is_cluster_cost THEN 0 ELSE cost END)"
+    description: "Support, Charts, Data Lake and other lines not billed to a cluster"
+    format_preset: currency_usd
+  - name: avg_daily_cost
+    display_name: "Avg daily cost"
+    expression: "SUM(cost) / NULLIF(COUNT(DISTINCT date), 0)"
+    format_preset: currency_usd
+  - name: cluster_count
+    display_name: "Clusters"
+    expression: "COUNT(DISTINCT CASE WHEN is_cluster_cost THEN project_cluster END)"
+    format_preset: humanize
+  - name: instance_hours
+    display_name: "Instance hours"
+    expression: "SUM(CASE WHEN category = 'Instances' THEN quantity ELSE 0 END)"
+    format_preset: humanize
+  - name: total_quantity
+    display_name: "Quantity"
+    expression: "SUM(quantity)"
+    description: "In the line's unit (only meaningful per SKU or unit)"
+    format_preset: humanize
+  - name: avg_unit_price
+    display_name: "Avg unit price"
+    expression: "SUM(cost) / NULLIF(SUM(quantity), 0)"
+    description: "Cost per unit (only meaningful per SKU)"
+    format_preset: currency_usd
+  - name: line_count
+    display_name: "Line items"
+    expression: "COUNT(*)"
+    format_preset: humanize

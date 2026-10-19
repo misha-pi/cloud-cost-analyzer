@@ -1,0 +1,18 @@
+type: explore
+
+display_name: "MongoDB Atlas Cost Explorer"
+description: "Explore MongoDB Atlas billing by cluster, project, category and SKU"
+
+metrics_view: atlas_cost_metrics
+
+dimensions: '*'
+measures: '*'
+
+defaults:
+  comparison_mode: time
+  time_range: P3M
+  dimensions:
+    - project_cluster
+    - category
+  measures:
+    - total_cost

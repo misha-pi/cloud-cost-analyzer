@@ -1,0 +1,98 @@
+# GCP and MongoDB Atlas cost side by side (model: cloud_provider_costs).
+# Time charts follow the time grain picked in the time filter (day, week, month, year).
+type: canvas
+display_name: "GCP and MongoDB Atlas Cost"
+
+defaults:
+  time_range: P3M
+  comparison_mode: time
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            Total cloud cost by provider. GCP is net cost after credits (as on the GCP pages); MongoDB Atlas is the
+            billed line item cost. **Project / cluster** is the GCP project or the Atlas project and cluster.
+        width: 12
+    height: 80px
+  - items:
+      - kpi_grid:
+          metrics_view: cloud_provider_cost_metrics
+          measures: [total_cost, gcp_cost, atlas_cost, atlas_share]
+          comparison: [delta, percent_change]
+        width: 12
+    height: 160px
+  - items:
+      - stacked_bar:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Cost over time by provider"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: provider
+            type: nominal
+        width: 8
+      - donut_chart:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Cost by provider"
+          measure:
+            field: total_cost
+            type: quantitative
+            showTotal: true
+          color:
+            field: provider
+            type: nominal
+        width: 4
+    height: 360px
+  - items:
+      - leaderboard:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Top GCP projects and Atlas clusters"
+          dimensions: [component]
+          measures: [total_cost]
+          num_rows: 30
+        width: 6
+      - stacked_bar:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Top services / categories by provider"
+          x:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          y:
+            field: service
+            type: nominal
+            limit: 15
+            sort: "-x"
+          color:
+            field: provider
+            type: nominal
+        width: 6
+    height: 460px
+  - items:
+      - pivot:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Monthly cost by provider"
+          row_dimensions: [provider]
+          col_dimensions: [date_rill_TIME_GRAIN_MONTH]
+          measures: [total_cost]
+        width: 8
+      - pivot:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Yearly cost by provider"
+          row_dimensions: [provider]
+          col_dimensions: [date_rill_TIME_GRAIN_YEAR]
+          measures: [total_cost]
+        width: 4
+    height: 260px
+
+time_ranges: [P7D, P30D, P3M, P6M, P12M, P24M, rill-MTD, rill-PM, rill-YTD]
+filters:
+  enable: true
+
+theme: theme

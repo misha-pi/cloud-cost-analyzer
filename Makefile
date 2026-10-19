@@ -137,9 +137,20 @@ run-stripe: check-secrets
 	echo "####################################################################"
 
 
+run-atlas: check-secrets
+	uv run python pipelines/mongodb_atlas_billing_pipeline.py
+	echo "####################################################################"
+# Made-up Atlas data in viz_rill/data/atlas_billing (gitignored), no .dlt/secrets.toml needed.
+# `make demo` runs this; run it alone to see the Atlas pages next to your own GCP data.
+atlas-demo-data:
+	PYTHON="uv run python" sh scripts/atlas_demo_data.sh
+
 #run dlt incremental loads
 # Pipelines we run. Add new sources here (upstream also ran run-aws and run-stripe).
-run-etl: check-secrets run-gcp
+run-etl: check-secrets run-gcp run-atlas
+
+test-atlas:
+	uv run python -m unittest discover -s tests -p "test_atlas*.py" -v
 
 
 test-duplicates-duckdb:
@@ -183,6 +194,7 @@ demo: install-rill setup-connector-duckdb
 	@echo "Copying demo data to viz_rill/data/..."
 	@cp -r viz_rill/data_demo/* viz_rill/data/
 	@echo "✅ Demo data copied successfully"
+	@PYTHON="uv run python" sh scripts/atlas_demo_data.sh
 	@echo "✅ Connector set to DuckDB (local parquet files)"
 	@echo ""
 	@echo "Starting Rill dashboards with demo data..."
