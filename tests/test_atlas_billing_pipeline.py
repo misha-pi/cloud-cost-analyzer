@@ -1,5 +1,5 @@
 """
-Tests for the MongoDB Atlas billing pipeline (PI-18056).
+Tests for the MongoDB Atlas billing pipeline.
 
 The test data is generated into a temporary folder by scripts/generate_atlas_fixtures.py (made-up
 values in the production schema); nothing is committed.
