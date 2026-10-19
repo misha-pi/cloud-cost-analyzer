@@ -62,23 +62,6 @@ The real pipelines delete demo-marked data before loading, so real rows are neve
 rows. If the GCP files are missing, the next `make run-gcp` reloads from `initial_start_date` instead
 of loading only rows newer than its saved cursor.
 
-### Clearing one source's data
-
-`make clear` deletes all local data and all pipeline state at once. To reload a single source, clear
-only that one; the others stay untouched:
-
-```bash
-make clear-atlas             # shows what would be deleted
-CONFIRM=1 make clear-atlas   # deletes viz_rill/data/atlas_billing
-make run-atlas               # reloads it in full
-```
-
-The same works with `make clear-gcp` (then `make run-gcp`; GCP is slow to reload, about 8 h for 1.5
-months) and `make clear-source SOURCE=<dataset folder>` for any other source. GCP and Atlas reload in
-full by themselves once their folder is gone; other pipelines keep an incremental cursor in dlt's
-local state, so also run `make dlt-clear` for them. If `make serve` is running, restart it after the
-reload. To add a new source, add a `clear-<source>` target next to `clear-gcp` in the `Makefile`.
-
 ## MongoDB Atlas billing
 
 The Atlas pages (**MongoDB Atlas Cost by Cluster**, **GCP and MongoDB Atlas Cost**) read the
@@ -114,6 +97,23 @@ yet, so the Atlas pages stay broken until then. Without a restart, this refreshe
 curl -X POST http://localhost:9009/v1/instances/default/trigger -H 'content-type: application/json' \
   -d '{"models":[{"model":"atlas_line_items_raw","full":true},{"model":"atlas_invoices_raw","full":true},{"model":"cloud_provider_costs","full":true}]}'
 ```
+
+## Clearing one source's data
+
+`make clear` deletes all local data and all pipeline state at once. To reload a single source, clear
+only that one; the others stay untouched:
+
+```bash
+make clear-atlas             # shows what would be deleted
+CONFIRM=1 make clear-atlas   # deletes viz_rill/data/atlas_billing
+make run-atlas               # reloads it in full
+```
+
+The same works with `make clear-gcp` (then `make run-gcp`; GCP is slow to reload, about 8 h for 1.5
+months) and `make clear-source SOURCE=<dataset folder>` for any other source. GCP and Atlas reload in
+full by themselves once their folder is gone; other pipelines keep an incremental cursor in dlt's
+local state, so also run `make dlt-clear` for them. If `make serve` is running, restart it after the
+reload. To add a new source, add a `clear-<source>` target next to `clear-gcp` in the `Makefile`.
 
 ## Features
 
