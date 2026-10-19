@@ -2,7 +2,7 @@
 
 Our MongoDB Atlas invoices are synced into a MongoDB database, `atlas_billing`.
 The pipeline (`pipelines/mongodb_atlas_billing_pipeline.py`) reads it read-only and loads two of its
-three collections for the cost dashboards (PI-18056).
+three collections for the cost dashboards.
 
 No billing data is committed. `scripts/generate_atlas_fixtures.py` generates documents with the
 production field names, key order and BSON types below, but every value (org, project and cluster
@@ -12,31 +12,31 @@ folder, and `tests/test_atlas_billing_pipeline.py` checks that they keep exactly
 
 ## Which collections the dashboards use
 
-| Collection | Used | Why |
-|---|---|---|
-| `lineItems` | **Yes, main source** | One document per day, project, cluster and SKU. The only collection with cost per cluster per day. For every closed month its costs add up exactly to the invoice subtotal. |
-| `invoices` | Header only | Monthly totals (subtotal, credits, billed, status) to check that the line items are complete. The embedded line items duplicate `lineItems` and are capped (see below), so they are not loaded. |
-| `orgInfo` | No | The single org's id and name, which every line item already carries in `org`. |
+| Collection  | Used                 | Why                                                                                                                                                                                             |
+| ----------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lineItems` | **Yes, main source** | One document per day, project, cluster and SKU. The only collection with cost per cluster per day. For every closed month its costs add up exactly to the invoice subtotal.                     |
+| `invoices`  | Header only          | Monthly totals (subtotal, credits, billed, status) to check that the line items are complete. The embedded line items duplicate `lineItems` and are capped (see below), so they are not loaded. |
+| `orgInfo`   | No                   | The single org's id and name, which every line item already carries in `org`.                                                                                                                   |
 
 ## `lineItems`
 
-| Field | BSON type | Notes |
-|---|---|---|
-| `_id` | ObjectId | |
-| `category` | string | Instances, Storage, Backup, Data Transfer, Data Lake, Private Endpoint, Charts, Support, Other |
-| `cluster` | string | Cluster name. **Not unique across projects** (the same name in Production and Staging). `--n/a--` for org-level lines (Support, Charts, Data Lake, ...) |
-| `cost` | Decimal128 | Dollars, rounded to the cent, 13 to 16 decimal places. No negative (credit) lines |
-| `date` | Date | Usage day, midnight UTC |
-| `instance` | string | Cluster tier for Instances lines (`M10`, `M60_LOW_CPU`, `M10_PAUSED`, ...), otherwise `non-instance` |
-| `invoiceId` | string | `invoices.id` of the month's invoice |
-| `org` | object | `{id, name}`; one org |
-| `project` | object | `{id, name}`, e.g. "Orders - Production". **Empty `{}` for Support lines** (and the odd other line) |
-| `provider` | string | `GCP`, `AWS` (Data Lake) or `n/a` (Support, Charts) |
-| `quantity` | Double or Int32 | Int32 when whole |
-| `sku` | string | e.g. `ATLAS_GCP_INSTANCE_M10`, `ATLAS_GCP_DATA_TRANSFER_INTERNET`, `ATLAS_SUPPORT` |
-| `tags` | object | Only on a few lines, always `{}` so far. Probably Atlas resource tags; kept as JSON |
-| `unit` | string | server hours, GB, GB hours, GB days, TB, days, hours |
-| `unitPriceDollars` | Decimal128 | |
+| Field              | BSON type       | Notes                                                                                                                                                   |
+| ------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_id`              | ObjectId        |                                                                                                                                                         |
+| `category`         | string          | Instances, Storage, Backup, Data Transfer, Data Lake, Private Endpoint, Charts, Support, Other                                                          |
+| `cluster`          | string          | Cluster name. **Not unique across projects** (the same name in Production and Staging). `--n/a--` for org-level lines (Support, Charts, Data Lake, ...) |
+| `cost`             | Decimal128      | Dollars, rounded to the cent, 13 to 16 decimal places. No negative (credit) lines                                                                       |
+| `date`             | Date            | Usage day, midnight UTC                                                                                                                                 |
+| `instance`         | string          | Cluster tier for Instances lines (`M10`, `M60_LOW_CPU`, `M10_PAUSED`, ...), otherwise `non-instance`                                                    |
+| `invoiceId`        | string          | `invoices.id` of the month's invoice                                                                                                                    |
+| `org`              | object          | `{id, name}`; one org                                                                                                                                   |
+| `project`          | object          | `{id, name}`, e.g. "Orders - Production". **Empty `{}` for Support lines** (and the odd other line)                                                     |
+| `provider`         | string          | `GCP`, `AWS` (Data Lake) or `n/a` (Support, Charts)                                                                                                     |
+| `quantity`         | Double or Int32 | Int32 when whole                                                                                                                                        |
+| `sku`              | string          | e.g. `ATLAS_GCP_INSTANCE_M10`, `ATLAS_GCP_DATA_TRANSFER_INTERNET`, `ATLAS_SUPPORT`                                                                      |
+| `tags`             | object          | Only on a few lines, always `{}` so far. Probably Atlas resource tags; kept as JSON                                                                     |
+| `unit`             | string          | server hours, GB, GB hours, GB days, TB, days, hours                                                                                                    |
+| `unitPriceDollars` | Decimal128      |                                                                                                                                                         |
 
 ## `invoices`
 
