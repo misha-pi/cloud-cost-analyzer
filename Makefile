@@ -265,14 +265,17 @@ gcp-generate-dashboards:
 		--dim-prefixes "labels_,service__,project__" \
 		--timeseries-col date
 
+# Optional: generates per-prefix GCP canvases (labels/service/project). Not part of run-all; see above.
 gcp-dashboards: gcp-normalize gcp-generate-dashboards
 	@echo "✅ GCP dashboards generated! Run 'make serve' to view them."
 
 #what this does:
 # 1. load data incrementally
-# 2. normalizes AWS & GCP cost reports and generates Rill dashboards
+# 2. normalizes AWS cost reports and generates the AWS Rill dashboards
 # 3. starts Rill BI and opens in browser
-run-all: install run-etl aws-dashboards gcp-dashboards serve-duckdb
+# GCP pages are hand-written (gcp_overview, gcp_overview_service_app, gcp_atlas_canvas), so gcp-dashboards is
+# not run here: it would recreate the generated "GCP Labels Analysis" pages that were removed (PI-18090).
+run-all: install run-etl aws-dashboards serve-duckdb
 
 
 

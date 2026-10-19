@@ -53,12 +53,12 @@ dimensions:
 
 measures:
   - name: total_cost
-    display_name: "Total Cost"
+    display_name: "Cost before credits"
     expression: "SUM(cost)"
     format_preset: currency_usd
 
   - name: total_credits
-    display_name: "Total Credits"
+    display_name: "Credits"
     expression: "SUM(credits_total)"
     format_preset: currency_usd
 
