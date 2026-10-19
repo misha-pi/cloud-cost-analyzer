@@ -1,8 +1,8 @@
 """
 Tests for the MongoDB Atlas billing pipeline.
 
-The test data is generated into a temporary folder by scripts/generate_atlas_fixtures.py (made-up
-values in the production schema); nothing is committed.
+The tests read the sample data in fixtures/atlas_billing/, made by scripts/generate_atlas_fixtures.py
+(made-up values in the production schema). A test checks the files still match the generator.
 
 Run: make test-atlas
   or uv run python -m unittest tests/test_atlas_billing_pipeline.py -v
@@ -25,16 +25,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import generate_atlas_fixtures  # noqa: E402
 import mongodb_atlas_billing_pipeline as atlas  # noqa: E402
 
-_TMP = tempfile.TemporaryDirectory(prefix="atlas_fixtures_")
-FIXTURES = pathlib.Path(_TMP.name)
-
-
-def setUpModule():
-    generate_atlas_fixtures.generate(FIXTURES)
-
-
-def tearDownModule():
-    _TMP.cleanup()
+FIXTURES = ROOT / "fixtures" / "atlas_billing"
 
 # Field paths and canonical Extended JSON types seen in production samples of atlas_billing.
 # The generated documents must use exactly these, so the pipeline is tested against the real schema.
@@ -172,6 +163,14 @@ class FixtureSchemaTest(unittest.TestCase):
             if doc["statusName"] != "PENDING":
                 self.assertEqual(cents[invoice_id], doc["subtotalCents"], invoice_id)
 
+    def test_fixtures_match_the_generator(self):
+        # Regenerate with the defaults; the committed files must be identical.
+        # If this fails: python scripts/generate_atlas_fixtures.py --out fixtures/atlas_billing
+        with tempfile.TemporaryDirectory() as tmp:
+            generate_atlas_fixtures.generate(pathlib.Path(tmp))
+            for name in ("invoices.json", "lineItems.json"):
+                self.assertEqual((pathlib.Path(tmp) / name).read_bytes(), (FIXTURES / name).read_bytes(), name)
+
     def test_split_invoices_repeat_the_header(self):
         headers = defaultdict(set)
         for doc in _bson("invoices"):
@@ -183,7 +182,7 @@ class FixtureSchemaTest(unittest.TestCase):
 class LineItemRowTest(unittest.TestCase):
     def doc(self, **overrides):
         doc = {
-            "_id": ObjectId("65a926a24ac34dd48e495b25"),
+            "_id": ObjectId("0123456789abcdef01234567"),
             "category": "Instances",
             "cluster": "orders",
             "cost": Decimal128("79.2000000000000000"),
@@ -227,13 +226,13 @@ class LineItemRowTest(unittest.TestCase):
 class InvoiceRowTest(unittest.TestCase):
     def test_header_in_dollars(self):
         row = atlas.invoice_row({
-            "_id": ObjectId("6ad1d05754a49d2ed9632cdd"), "id": "6a447683757474b1b5822950", "segment": 1,
+            "_id": ObjectId("abcdefabcdefabcdefabcdef"), "id": "fedcba9876543210fedcba98", "segment": 1,
             "orgId": "x", "statusName": "PAID", "startDate": "2026-07-01T00:00:00Z",
             "endDate": "2026-08-01T00:00:00Z", "created": "2026-07-01T02:00:25Z", "updated": "2026-08-01T02:00:23Z",
             "subtotalCents": 1234567, "creditsCents": 1234567, "salesTaxCents": 0, "startingBalanceCents": 0,
             "amountBilledCents": 1234567, "amountPaidCents": 0, "lineItemCount": 2033,
         })
-        self.assertEqual(row["invoice_id"], "6a447683757474b1b5822950")
+        self.assertEqual(row["invoice_id"], "fedcba9876543210fedcba98")
         self.assertEqual(row["segment"], 1)
         self.assertEqual(row["start_date"], dt.date(2026, 7, 1))
         self.assertEqual(row["subtotal"], Decimal("12345.67"))

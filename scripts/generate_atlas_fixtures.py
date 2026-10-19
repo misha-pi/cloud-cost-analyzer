@@ -1,8 +1,9 @@
 """
 Generate made-up MongoDB Atlas billing documents for the tests and the local demo.
 
-Nothing generated here is committed: the tests write to a temporary folder, and `make demo` /
-`make atlas-demo-data` load the documents into viz_rill/data (gitignored) through the pipeline.
+With the defaults (Sep - Oct 2026) it writes the sample data in fixtures/atlas_billing/, which the
+tests read. `make demo` / `make atlas-demo-data` generate a longer range and load it into
+viz_rill/data (gitignored) through the pipeline.
 
 The documents have the same collections, field names, key order and BSON types as our
 `atlas_billing` database (see docs/atlas_billing_schema.md), but every value is made up:
@@ -23,7 +24,7 @@ Writes one canonical Extended JSON document per line (the format of
 `mongoexport --jsonFormat=canonical`), so the files can also be loaded with `mongoimport`.
 
 Usage:
-  python scripts/generate_atlas_fixtures.py --out /tmp/atlas_fixtures                  # Sep - Oct 2026
+  python scripts/generate_atlas_fixtures.py --out fixtures/atlas_billing              # Sep - Oct 2026
   python scripts/generate_atlas_fixtures.py --start 2025-01-01 --out /tmp/atlas_demo   # longer demo
 """
 import argparse
@@ -49,8 +50,8 @@ PROJECTS = {
     "Payments - Staging": [("payments", "M10", "M10", None, None)],
     "Search - Production": [("search", "M60_LOW_CPU", "M60_LOW_CPU", dt.date(2025, 6, 1), None)],
     "Reports - Production": [("reports", "M20", "M30", None, None)],
-    "Chat - Production": [("chat", "M30", "M30", None, None)],
-    "Chat - Staging": [("chat", "M10", "M10", None, None)],
+    "Inbox - Production": [("inbox", "M30", "M30", None, None)],
+    "Inbox - Staging": [("inbox", "M10", "M10", None, None)],
 }
 HOURLY_PRICE = {"M10": 0.09, "M20": 0.21, "M30": 0.57, "M40": 1.10, "M50": 2.10, "M60_LOW_CPU": 2.45}
 
@@ -144,7 +145,7 @@ def generate(out: pathlib.Path, start: dt.date = DEFAULT_START, end: dt.date = D
                 for line in daily_lines(g, project, current, day, growth):
                     raw.append((day, project, cluster, *line))
         # Org-level Support plan, billed per day, with no project.
-        raw.append((day, None, NO_CLUSTER, "Support", "ATLAS_SUPPORT", "days", "non-instance", "n/a", 1, 75.99))
+        raw.append((day, None, NO_CLUSTER, "Support", "ATLAS_SUPPORT", "days", "non-instance", "n/a", 1, 49.5))
         if day.day % 3 == 0:
             raw.append((day, "Reports - Production", NO_CLUSTER, "Data Lake", "ATLAS_DATA_LAKE_AWS_DATA_SCANNED",
                         "TB", "non-instance", "AWS", round(g.rng.uniform(0.01, 0.4), 6), 5.0))

@@ -4,11 +4,12 @@ Our MongoDB Atlas invoices are synced into a MongoDB database, `atlas_billing`.
 The pipeline (`pipelines/mongodb_atlas_billing_pipeline.py`) reads it read-only and loads two of its
 three collections for the cost dashboards.
 
-No billing data is committed. `scripts/generate_atlas_fixtures.py` generates documents with the
-production field names, key order and BSON types below, but every value (org, project and cluster
-names, IDs, quantities, prices, costs) is made up. It writes one canonical Extended JSON document per
-line, the format of `mongoexport --jsonFormat=canonical`. The tests generate them into a temporary
-folder, and `tests/test_atlas_billing_pipeline.py` checks that they keep exactly this schema.
+**Sample data:** `fixtures/atlas_billing/` has `invoices.json` and `lineItems.json` for Sep - Oct 2026.
+They have the production field names, key order and BSON types below, but every value (org, project
+and cluster names, IDs, quantities, prices, costs) is made up by `scripts/generate_atlas_fixtures.py`.
+Each file has one canonical Extended JSON document per line, the format of
+`mongoexport --jsonFormat=canonical`. `tests/test_atlas_billing_pipeline.py` checks that they keep
+exactly this schema and still match the generator.
 
 ## Which collections the dashboards use
 
@@ -67,9 +68,9 @@ ISO strings (`startDate`, `endDate`, `created`, `updated`); `id`, `orgId`, `stat
 ## Generated data
 
 ```bash
-make test-atlas        # generates Sep - Oct 2026 into a temporary folder and runs the tests
+make test-atlas        # runs the tests on fixtures/atlas_billing
 make atlas-demo-data   # 1 January last year to today, loaded into viz_rill/data/atlas_billing (gitignored)
-uv run python scripts/generate_atlas_fixtures.py --out /tmp/atlas_fixtures   # just the JSON files
+uv run python scripts/generate_atlas_fixtures.py --out fixtures/atlas_billing   # regenerate the sample files
 ```
 
 `make demo` (and the Docker demo) run `make atlas-demo-data`'s script, `scripts/atlas_demo_data.sh`, after
