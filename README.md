@@ -93,6 +93,10 @@ The Atlas pages (**MongoDB Atlas Cost by Cluster**, **GCP and MongoDB Atlas Cost
 `atlas_billing` MongoDB database: daily cost per project, cluster and SKU from
 `lineItems`, and monthly totals from `invoices`. Schema and collection choice: [docs/atlas_billing_schema.md](docs/atlas_billing_schema.md).
 
+Atlas is paid through the GCP Marketplace, so the GCP billing export also contains it (service
+"MongoDB Atlas (pay-as-you-go)", the same amount as the Atlas data day by day). `models/gcp_costs.sql` leaves
+that service out, so GCP pages show GCP only and Atlas is counted once.
+
 Sample data with made-up values in the real schema: [fixtures/atlas_billing/](fixtures/atlas_billing/).
 To see the pages locally with made-up data (1 January last year to today), no credentials needed:
 

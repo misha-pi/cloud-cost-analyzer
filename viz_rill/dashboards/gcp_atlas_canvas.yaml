@@ -12,7 +12,8 @@ rows:
       - markdown:
           content: |
             Total cloud cost by provider. GCP is net cost after credits (as on the GCP pages); MongoDB Atlas is the
-            billed line item cost. **Project / cluster** is the GCP project or the Atlas project and cluster.
+            billed line item cost. Atlas is billed through the GCP Marketplace, so it is counted only once, as Atlas.
+            **Project / cluster** is the GCP project or the Atlas project and cluster.
         width: 12
     height: 80px
   - items:
