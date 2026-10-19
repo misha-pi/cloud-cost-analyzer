@@ -24,4 +24,6 @@ dependencies = [
     "clickhouse-connect>=0.10.0",
     #motherduck
     "dlt[motherduck]",
+    # mongodb atlas billing
+    "pymongo>=4.10",
 ]

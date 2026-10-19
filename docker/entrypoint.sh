@@ -28,6 +28,8 @@ prepare_demo() {
   rm -rf viz_rill/data
   mkdir -p viz_rill/data
   cp -a viz_rill/data_demo/. viz_rill/data/
+  # MongoDB Atlas demo data is generated, not bundled.
+  sh scripts/atlas_demo_data.sh
 }
 
 if [ "$#" -eq 0 ]; then

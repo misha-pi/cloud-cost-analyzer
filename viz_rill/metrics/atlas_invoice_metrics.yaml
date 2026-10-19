@@ -1,0 +1,51 @@
+# MongoDB Atlas invoices, one row per invoice (model: atlas_invoice_totals)
+version: 1
+type: metrics_view
+
+display_name: MongoDB Atlas Invoices
+model: atlas_invoice_totals
+timeseries: invoice_date
+smallest_time_grain: "month"
+
+dimensions:
+  - name: invoice_month
+    display_name: Invoice month
+    column: invoice_month
+  - name: invoice_year
+    display_name: Invoice year
+    column: invoice_year
+  - name: status
+    display_name: Status
+    column: status
+  - name: invoice_id
+    display_name: Invoice
+    column: invoice_id
+
+measures:
+  - name: subtotal
+    display_name: "Invoice subtotal"
+    expression: "SUM(subtotal)"
+    description: "Not filled in for the open (PENDING) month"
+    format_preset: currency_usd
+  - name: line_items_cost
+    display_name: "Line items total"
+    expression: "SUM(line_items_cost)"
+    format_preset: currency_usd
+  - name: unexplained_cost
+    display_name: "Subtotal minus line items"
+    expression: "SUM(unexplained_cost)"
+    description: "Should be 0 for every closed invoice"
+    format_preset: currency_usd
+  - name: credits
+    display_name: "Credits applied"
+    expression: "SUM(credits)"
+    format_preset: currency_usd
+  - name: amount_billed
+    display_name: "Billed"
+    expression: "SUM(amount_billed)"
+    format_preset: currency_usd
+  - name: amount_paid
+    display_name: "Paid in cash"
+    expression: "SUM(amount_paid)"
+    description: "0 when credits cover the invoice"
+    format_preset: currency_usd

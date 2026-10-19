@@ -1,0 +1,246 @@
+# MongoDB Atlas cost by cluster. Data: atlas_billing.lineItems and invoices, loaded by
+# pipelines/mongodb_atlas_billing_pipeline.py. Time charts follow the time grain picked in the
+# dashboard's time filter (day, week, month, year); the Month and Year tables are fixed.
+type: canvas
+display_name: "MongoDB Atlas Cost by Cluster"
+
+defaults:
+  time_range: P3M
+  comparison_mode: time
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            MongoDB Atlas cost from the `atlas_billing` line items, by day, project, cluster and SKU. Cluster names
+            repeat across projects, so **Project / cluster** is the unique cluster. Org-level lines (Support, Charts,
+            Data Lake) show as **(no cluster)**. Pick the period and the time grain (day, week, month, year) in the
+            time filter. A closed month adds up to its invoice subtotal (invoice table at the bottom).
+        width: 12
+    height: 100px
+
+  # KPIs, compared with the previous period
+  - items:
+      - kpi_grid:
+          metrics_view: atlas_cost_metrics
+          measures:
+            [
+              total_cost,
+              cluster_cost,
+              org_level_cost,
+              avg_daily_cost,
+              cluster_count,
+              instance_hours,
+            ]
+          comparison: [delta, percent_change]
+        width: 12
+    height: 180px
+
+  # Cost over time by cluster, and the share by category
+  - items:
+      - stacked_bar:
+          metrics_view: atlas_cost_metrics
+          title: "Cost over time by cluster"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: cluster_label
+            type: nominal
+            limit: 12
+        width: 8
+      - donut_chart:
+          metrics_view: atlas_cost_metrics
+          title: "Cost by category"
+          measure:
+            field: total_cost
+            type: quantitative
+            showTotal: true
+          color:
+            field: category
+            type: nominal
+            limit: 10
+        width: 4
+    height: 380px
+
+  # Category trend and environment split
+  - items:
+      - area_chart:
+          metrics_view: atlas_cost_metrics
+          title: "Cost over time by category"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: category
+            type: nominal
+            limit: 10
+        width: 8
+      - pie_chart:
+          metrics_view: atlas_cost_metrics
+          title: "Cost by environment"
+          measure:
+            field: total_cost
+            type: quantitative
+          color:
+            field: environment
+            type: nominal
+            limit: 8
+        width: 4
+    height: 360px
+
+  # Rankings
+  - items:
+      - leaderboard:
+          metrics_view: atlas_cost_metrics
+          title: "Top clusters (project / cluster)"
+          dimensions: [project_cluster]
+          measures: [total_cost, avg_daily_cost]
+          num_rows: 25
+        width: 6
+      - stacked_bar:
+          metrics_view: atlas_cost_metrics
+          title: "Top clusters by category"
+          x:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          y:
+            field: project_cluster
+            type: nominal
+            limit: 15
+            sort: "-x"
+          color:
+            field: category
+            type: nominal
+        width: 6
+    height: 460px
+
+  - items:
+      - pie_chart:
+          metrics_view: atlas_cost_metrics
+          title: "Cost by app (project prefix)"
+          measure:
+            field: total_cost
+            type: quantitative
+          color:
+            field: app_name
+            type: nominal
+            limit: 12
+        width: 4
+      - stacked_bar_normalized:
+          metrics_view: atlas_cost_metrics
+          title: "Share of cost by environment over time"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: total_cost
+            type: quantitative
+          color:
+            field: environment
+            type: nominal
+        width: 8
+    height: 360px
+
+  # Monthly and yearly tables (fixed grain, independent of the time filter's grain)
+  - items:
+      - heatmap:
+          metrics_view: atlas_cost_metrics
+          title: "Monthly cost heatmap: cluster x month"
+          x:
+            field: month
+            type: nominal
+            sort: "x"
+            limit: 24
+          y:
+            field: project_cluster
+            type: nominal
+            limit: 20
+          color:
+            field: total_cost
+            type: quantitative
+          show_data_labels: false
+        width: 12
+    height: 480px
+
+  - items:
+      - pivot:
+          metrics_view: atlas_cost_metrics
+          title: "Monthly cost by cluster (table)"
+          row_dimensions: [project_cluster]
+          col_dimensions: [date_rill_TIME_GRAIN_MONTH]
+          measures: [total_cost]
+        width: 12
+    height: 460px
+
+  - items:
+      - pivot:
+          metrics_view: atlas_cost_metrics
+          title: "Yearly cost by app and category"
+          row_dimensions: [app_name, category]
+          col_dimensions: [date_rill_TIME_GRAIN_YEAR]
+          measures: [total_cost]
+        width: 6
+      - table:
+          metrics_view: atlas_cost_metrics
+          title: "SKU details"
+          columns:
+            [
+              sku,
+              category,
+              unit,
+              total_cost,
+              total_quantity,
+              avg_unit_price,
+              line_count,
+            ]
+        width: 6
+    height: 460px
+
+  # Instance sizes and invoice reconciliation
+  - items:
+      - bar_chart:
+          metrics_view: atlas_cost_metrics
+          title: "Instance cost by size"
+          x:
+            field: instance_size
+            type: nominal
+            limit: 15
+            sort: "-y"
+            showNull: false
+          y:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+        width: 4
+      - table:
+          metrics_view: atlas_invoice_metrics
+          title: "Invoices: subtotal vs line items (0 = cluster breakdown is complete)"
+          columns:
+            [
+              invoice_month,
+              status,
+              subtotal,
+              line_items_cost,
+              unexplained_cost,
+              amount_billed,
+              credits,
+              amount_paid,
+            ]
+        width: 8
+    height: 360px
+
+time_ranges: [P7D, P30D, P3M, P6M, P12M, P24M, rill-MTD, rill-PM, rill-YTD]
+filters:
+  enable: true
+
+theme: theme

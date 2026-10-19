@@ -59,6 +59,15 @@ table_names = [
 input_data_dir = "viz_rill/data/gcp_costs"  # Directory where GCP parquet files are loaded
 normalized_data_dir = "viz_rill/data/gcp_costs"  # Directory for normalized GCP data
 
+# MongoDB Atlas billing (pipelines/mongodb_atlas_billing_pipeline.py)
+# Reads the atlas_billing database (lineItems and invoices) read-only. The connection string goes in
+# .dlt/secrets.toml ([sources.atlas_billing] connection_string), or set MONGO_BILLING_HOST,
+# MONGO_BILLING_USER and MONGO_BILLING_PASSWORD (as in the server's mongo.env).
+[sources.atlas_billing]
+database = "atlas_billing"
+dataset_name = "atlas_billing"
+initial_start_date = "2024-01-01T00:00:00Z"  # Line items from this day onwards (reloaded in full every run)
+
 # Stripe configuration
 [sources.stripe]
 dataset_name = "stripe_costs"

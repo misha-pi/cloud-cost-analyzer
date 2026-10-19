@@ -51,6 +51,32 @@ make serve
 
 his writes parquet under `viz_rill/data/gcp_costs/` and opens Rill at [http://localhost:9009](http://localhost:9009). If a previous GCP load left pipeline state, run `make dlt-clear` first so rows are not skipped.
 
+## MongoDB Atlas billing
+
+The Atlas pages (**MongoDB Atlas Cost by Cluster**, **GCP and MongoDB Atlas Cost**) read the
+`atlas_billing` MongoDB database: daily cost per project, cluster and SKU from
+`lineItems`, and monthly totals from `invoices`. Schema and collection choice: [docs/atlas_billing_schema.md](docs/atlas_billing_schema.md).
+
+No billing data is committed. To see the pages locally with made-up data (1 January last year to
+today), no credentials needed:
+
+```bash
+make demo
+```
+
+`make demo` generates the Atlas data itself. To add it next to the GCP data you already loaded
+(it writes only `viz_rill/data/atlas_billing/`):
+
+```bash
+make atlas-demo-data
+make serve
+```
+
+Real data: put the read-only connection string in `.dlt/secrets.toml` under
+`[sources.atlas_billing] connection_string` (or set `MONGO_BILLING_HOST`, `MONGO_BILLING_USER` and
+`MONGO_BILLING_PASSWORD`), then `make run-atlas`. `make run-etl` runs it after GCP. Each run reloads
+the line items from `initial_start_date` in `.dlt/config.toml`. Tests: `make test-atlas`.
+
 ## Features
 
 - **Multi-Cloud Cost Tracking** - AWS, GCP, and future cloud providers

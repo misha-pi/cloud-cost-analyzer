@@ -1,0 +1,45 @@
+# GCP and MongoDB Atlas cost side by side (model: cloud_provider_costs)
+version: 1
+type: metrics_view
+
+display_name: GCP and Atlas Cost
+model: cloud_provider_costs
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: provider
+    display_name: Provider
+    column: provider
+  - name: service
+    display_name: Service / category
+    column: service
+  - name: component
+    display_name: Project / cluster
+    column: component
+  - name: month
+    display_name: Month
+    column: month
+  - name: year
+    display_name: Year
+    column: year
+
+measures:
+  - name: total_cost
+    display_name: "Cost"
+    expression: "SUM(cost)"
+    description: "GCP net cost after credits plus Atlas billed cost"
+    format_preset: currency_usd
+    valid_percent_of_total: true
+  - name: atlas_cost
+    display_name: "Atlas cost"
+    expression: "SUM(CASE WHEN provider = 'MongoDB Atlas' THEN cost ELSE 0 END)"
+    format_preset: currency_usd
+  - name: gcp_cost
+    display_name: "GCP net cost"
+    expression: "SUM(CASE WHEN provider = 'GCP' THEN cost ELSE 0 END)"
+    format_preset: currency_usd
+  - name: atlas_share
+    display_name: "Atlas share"
+    expression: "SUM(CASE WHEN provider = 'MongoDB Atlas' THEN cost ELSE 0 END) / NULLIF(SUM(cost), 0)"
+    format_preset: percentage
