@@ -99,7 +99,6 @@ def bigquery_billing_table(
             query = f"""
                 SELECT * FROM `{project_id}.{dataset}.{table_name}`
                 WHERE export_time > TIMESTAMP '{ts}'
-                ORDER BY export_time
             """
             query_job = client.query(query)
         else:
@@ -116,10 +115,10 @@ def bigquery_billing_table(
             query = f"""
                 SELECT * FROM `{project_id}.{dataset}.{table_name}`
                 WHERE export_time > @last_value
-                ORDER BY export_time
             """
 
             job_config = bigquery.QueryJobConfig(
+                use_query_cache=False,
                 query_parameters=[
                     bigquery.ScalarQueryParameter("last_value", "TIMESTAMP", last_value)
                 ]
