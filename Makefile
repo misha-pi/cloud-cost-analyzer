@@ -81,6 +81,18 @@ clear-clickhouse-force:
 
 clear: dlt-clear clear-data clear-rill
 
+## Per-source cleanup: delete one source's local data (viz_rill/data/<dataset>) so its next load reloads
+## it in full; other sources are untouched. Shows what it would delete; add CONFIRM=1 to delete.
+## New source: add a clear-<source> line with its dataset folder and its run target.
+clear-source:
+	@sh scripts/clear_source.sh "$(SOURCE)" "$(RELOAD)"
+
+clear-gcp:
+	@sh scripts/clear_source.sh gcp_costs run-gcp
+
+clear-atlas:
+	@sh scripts/clear_source.sh atlas_billing run-atlas
+
 clear-all: clear clear-clickhouse
 
 ## Connector switching helpers
