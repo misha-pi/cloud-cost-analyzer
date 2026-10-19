@@ -12,6 +12,7 @@ dependencies = [
     "pyarrow>=22.0.0",
     #bigquery
     "google-cloud-bigquery>=3.38.0",
+    "google-cloud-bigquery-storage>=2.30.0",  # fast bulk download of query results (Storage Read API)
     # stripe
     "pandas>=2.0.0",
     "stripe>=5.0.0",
