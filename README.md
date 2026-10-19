@@ -51,6 +51,17 @@ make serve
 
 his writes parquet under `viz_rill/data/gcp_costs/` and opens Rill at [http://localhost:9009](http://localhost:9009). If a previous GCP load left pipeline state, run `make dlt-clear` first so rows are not skipped.
 
+### Demo data and real data
+
+`make demo` replaces `viz_rill/data/` with demo data and marks each dataset folder with a `_demo_data`
+file. It refuses to overwrite a folder without that file, i.e. data loaded by a real pipeline
+(`make run-gcp`, `make run-atlas`), so it cannot replace real data on the server by mistake;
+`FORCE=1 make demo` overrides that. `make atlas-demo-data` does the same check for `atlas_billing/`.
+
+The real pipelines delete demo-marked data before loading, so real rows are never mixed with demo
+rows. If the GCP files are missing, the next `make run-gcp` reloads from `initial_start_date` instead
+of loading only rows newer than its saved cursor.
+
 ## MongoDB Atlas billing
 
 The Atlas pages (**MongoDB Atlas Cost by Cluster**, **GCP and MongoDB Atlas Cost**) read the

@@ -28,6 +28,7 @@ prepare_demo() {
   rm -rf viz_rill/data
   mkdir -p viz_rill/data
   cp -a viz_rill/data_demo/. viz_rill/data/
+  for d in viz_rill/data/*/; do touch "${d}_demo_data"; done
   # MongoDB Atlas demo data is generated, not bundled.
   sh scripts/atlas_demo_data.sh
 }
