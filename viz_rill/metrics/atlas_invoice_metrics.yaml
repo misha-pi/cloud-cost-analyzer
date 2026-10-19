@@ -5,7 +5,10 @@ type: metrics_view
 display_name: MongoDB Atlas Invoices
 model: atlas_invoice_totals
 timeseries: invoice_date
-smallest_time_grain: "month"
+# Day, not month: a canvas uses the largest smallest_time_grain of all its metrics views for every
+# chart, so "month" here forced monthly buckets on the whole Atlas page and left ranges shorter than a
+# month (e.g. "Last 7 days") empty.
+smallest_time_grain: "day"
 
 dimensions:
   - name: invoice_month
