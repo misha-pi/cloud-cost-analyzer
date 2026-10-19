@@ -37,6 +37,15 @@ from bson import Decimal128, json_util
 # Atlas's cluster value for org-level lines such as Support, Charts and Data Lake.
 NO_CLUSTER = "--n/a--"
 
+# Atlas dollar amounts are Decimal128 with many decimal places: costs up to 16, unit prices up to 18
+# (e.g. 0.000197260273972603). dlt's default DECIMAL(38,9) cannot hold them and the parquet write fails.
+# Costs are kept exact as DECIMAL(38,16); unit prices are only shown, never summed, so they are floats.
+COST_SCALE = 16
+LINE_ITEM_COLUMNS = {
+    "cost": {"data_type": "decimal", "precision": 38, "scale": COST_SCALE},
+    "unit_price_dollars": {"data_type": "double"},
+}
+
 # Fixture dates load as UTC-aware datetimes, like pymongo's MongoClient(tz_aware=True).
 _FIXTURE_JSON_OPTIONS = json_util.CANONICAL_JSON_OPTIONS.with_options(tz_aware=True)
 
@@ -50,6 +59,17 @@ def _to_decimal(value) -> Decimal | None:
     if isinstance(value, Decimal128):
         return value.to_decimal()
     return Decimal(str(value))
+
+
+def _to_float(value) -> float | None:
+    decimal = _to_decimal(value)
+    return None if decimal is None else float(decimal)
+
+
+def _to_cost(value) -> Decimal | None:
+    """Cost rounded to COST_SCALE decimals (the column's scale; real costs are cents)."""
+    decimal = _to_decimal(value)
+    return None if decimal is None else decimal.quantize(Decimal(1).scaleb(-COST_SCALE))
 
 
 def _to_date(value) -> dt.date | None:
@@ -88,8 +108,8 @@ def line_item_row(doc: dict) -> dict:
         "provider": doc.get("provider"),
         "unit": doc.get("unit"),
         "quantity": float(doc["quantity"]) if doc.get("quantity") is not None else None,
-        "unit_price_dollars": _to_decimal(doc.get("unitPriceDollars")),
-        "cost": _to_decimal(doc.get("cost")),
+        "unit_price_dollars": _to_float(doc.get("unitPriceDollars")),
+        "cost": _to_cost(doc.get("cost")),
         # Atlas resource tags; always empty so far, so stored as JSON text rather than as columns.
         "tags": json.dumps(doc["tags"], sort_keys=True) if doc.get("tags") else None,
     }
@@ -129,6 +149,18 @@ def _read_fixture(fixtures_dir: pathlib.Path, collection: str):
                 yield json_util.loads(line, json_options=_FIXTURE_JSON_OPTIONS)
 
 
+def load_start(initial_start_date: str | None) -> dt.datetime:
+    """
+    First day to load: the first of the month of initial_start_date (UTC). Starting mid-month would
+    load only part of that month, so its total could never match its invoice.
+    """
+    start = dt.datetime.fromisoformat((initial_start_date or "2000-01-01").replace("Z", "+00:00"))
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=dt.timezone.utc)
+    start = start.astimezone(dt.timezone.utc)
+    return start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
 def _connection_string() -> str:
     connection_string = dlt.secrets.get("sources.atlas_billing.connection_string")
     if connection_string:
@@ -137,6 +169,12 @@ def _connection_string() -> str:
     user = os.getenv("MONGO_BILLING_USER")
     password = os.getenv("MONGO_BILLING_PASSWORD")
     if not (host and user and password):
+        if dlt.config.get("sources.atlas_billing.connection_string"):
+            # dlt only reads secrets from .dlt/secrets.toml and environment variables.
+            raise RuntimeError(
+                "sources.atlas_billing.connection_string is in .dlt/config.toml, where it is ignored "
+                "(and config.toml is committed). Move it to .dlt/secrets.toml under [sources.atlas_billing]."
+            )
         raise RuntimeError(
             "No Atlas billing connection: set sources.atlas_billing.connection_string in "
             ".dlt/secrets.toml, or MONGO_BILLING_HOST, MONGO_BILLING_USER and MONGO_BILLING_PASSWORD."
@@ -151,9 +189,7 @@ def atlas_billing_source(
     initial_start_date: str | None = None,
     fixtures_dir: str | None = None,
 ):
-    start = dt.datetime.fromisoformat((initial_start_date or "2000-01-01").replace("Z", "+00:00"))
-    if start.tzinfo is None:
-        start = start.replace(tzinfo=dt.timezone.utc)
+    start = load_start(initial_start_date)
     fixtures = pathlib.Path(fixtures_dir) if fixtures_dir else None
 
     def collection(name: str):
@@ -162,7 +198,7 @@ def atlas_billing_source(
         client = MongoClient(_connection_string(), tz_aware=True, appname="cloud-cost-analyzer")
         return client, client[database][name]
 
-    @dlt.resource(name="line_items", write_disposition="replace", primary_key="id")
+    @dlt.resource(name="line_items", write_disposition="replace", primary_key="id", columns=LINE_ITEM_COLUMNS)
     def line_items():
         if fixtures:
             docs = (d for d in _read_fixture(fixtures, "lineItems") if d["date"] >= start)

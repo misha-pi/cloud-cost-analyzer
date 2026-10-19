@@ -66,7 +66,8 @@ normalized_data_dir = "viz_rill/data/gcp_costs"  # Directory for normalized GCP 
 [sources.atlas_billing]
 database = "atlas_billing"
 dataset_name = "atlas_billing"
-initial_start_date = "2024-01-01T00:00:00Z"  # Line items from this day onwards (reloaded in full every run)
+initial_start_date = "2024-01-01T00:00:00Z"  # Line items from the 1st of this month onwards (reloaded in full every run)
+# The connection string is a secret: put it in .dlt/secrets.toml, never here (dlt ignores it here).
 
 # Stripe configuration
 [sources.stripe]

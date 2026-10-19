@@ -209,6 +209,7 @@ class LineItemRowTest(unittest.TestCase):
         self.assertEqual(row["cluster"], "orders")
         self.assertTrue(row["is_cluster_cost"])
         self.assertEqual(row["cost"], Decimal("79.2"))
+        self.assertIsInstance(row["unit_price_dollars"], float)
         self.assertEqual(row["quantity"], 72.0)
         self.assertIsNone(row["tags"])
 
@@ -271,6 +272,53 @@ class RemoveDemoDataTest(unittest.TestCase):
             (real.parent / "_demo_data").touch()
             atlas.remove_demo_data("atlas_billing")
             self.assertFalse(real.parent.exists())
+
+class LoadStartTest(unittest.TestCase):
+    def test_snaps_to_first_of_month(self):
+        self.assertEqual(atlas.load_start("2026-09-16T00:00:00Z"), dt.datetime(2026, 9, 1, tzinfo=dt.timezone.utc))
+        self.assertEqual(atlas.load_start("2026-09-01"), dt.datetime(2026, 9, 1, tzinfo=dt.timezone.utc))
+        self.assertEqual(atlas.load_start(None), dt.datetime(2000, 1, 1, tzinfo=dt.timezone.utc))
+
+    def test_mid_month_start_loads_whole_month(self):
+        source = atlas.atlas_billing_source(initial_start_date="2026-10-16T00:00:00Z", fixtures_dir=str(FIXTURES))
+        dates = [r["date"] for r in source.with_resources("line_items")]
+        self.assertEqual(min(dates), dt.date(2026, 10, 1))
+
+
+class ConnectionStringTest(unittest.TestCase):
+    def test_connection_string_in_config_toml_gives_clear_error(self):
+        env = {"SOURCES__ATLAS_BILLING__CONNECTION_STRING": "mongodb://u:p@h/"}
+        with unittest.mock.patch.dict(os.environ, env), \
+                unittest.mock.patch.object(atlas.dlt.secrets, "get", return_value=None), \
+                unittest.mock.patch.object(atlas.dlt.config, "get", return_value="mongodb://u:p@h/"):
+            for name in ("MONGO_BILLING_HOST", "MONGO_BILLING_USER", "MONGO_BILLING_PASSWORD"):
+                os.environ.pop(name, None)
+            with self.assertRaisesRegex(RuntimeError, "secrets.toml"):
+                atlas._connection_string()
+
+class FullLoadTest(unittest.TestCase):
+    """Runs the whole pipeline (extract, normalize, parquet load) on the fixtures."""
+
+    def test_loads_to_parquet_without_losing_decimals(self):
+        import dlt
+        import duckdb
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pipeline = dlt.pipeline("atlas_full_load_test", pipelines_dir=f"{tmp}/state",
+                                    destination=dlt.destinations.filesystem(f"{tmp}/data"),
+                                    dataset_name="atlas_billing")
+            pipeline.run(atlas.atlas_billing_source(fixtures_dir=str(FIXTURES)), loader_file_format="parquet")
+            files = f"{tmp}/data/atlas_billing/line_items/*.parquet"
+            loaded_cost, loaded_prices = duckdb.sql(
+                f"select sum(cost), list(distinct unit_price_dollars::varchar) from read_parquet('{files}')").fetchone()
+
+        docs = _bson("lineItems")
+        self.assertEqual(Decimal(str(loaded_cost)), sum(d["cost"].to_decimal() for d in docs))
+        # Unit prices with many decimal places (production has up to 18) load as floats.
+        expected = {float(d["unitPriceDollars"].to_decimal()) for d in docs}
+        self.assertEqual({float(p) for p in loaded_prices}, expected)
+        self.assertTrue(any(p != round(p, 9) for p in expected),
+                        "fixtures should include prices with more than 9 decimal places")
 
 if __name__ == "__main__":
     unittest.main()

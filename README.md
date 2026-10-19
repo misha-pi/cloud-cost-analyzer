@@ -86,7 +86,17 @@ make serve
 Real data: put the read-only connection string in `.dlt/secrets.toml` under
 `[sources.atlas_billing] connection_string` (or set `MONGO_BILLING_HOST`, `MONGO_BILLING_USER` and
 `MONGO_BILLING_PASSWORD`), then `make run-atlas`. `make run-etl` runs it after GCP. Each run reloads
-the line items from `initial_start_date` in `.dlt/config.toml`. Tests: `make test-atlas`.
+the line items from the first day of `initial_start_date`'s month in `.dlt/config.toml`, so every
+month is complete and adds up to its invoice. Tests: `make test-atlas`.
+
+After the **first** Atlas load on a server where `make serve` is already running, restart `make serve`.
+Rill does not retry models that failed earlier because `viz_rill/data/atlas_billing/` did not exist
+yet, so the Atlas pages stay broken until then. Without a restart, this refreshes them:
+
+```bash
+curl -X POST http://localhost:9009/v1/instances/default/trigger -H 'content-type: application/json' \
+  -d '{"models":[{"model":"atlas_line_items_raw","full":true},{"model":"atlas_invoices_raw","full":true},{"model":"cloud_provider_costs","full":true}]}'
+```
 
 ## Features
 
