@@ -27,6 +27,7 @@ import datetime as dt
 import json
 import os
 import pathlib
+import shutil
 from decimal import Decimal
 from urllib.parse import quote_plus
 
@@ -240,6 +241,18 @@ def atlas_billing_source(
     return line_items, invoices
 
 
+def remove_demo_data(dataset_name: str) -> None:
+    """
+    scripts/atlas_demo_data.sh marks its data with a `_demo_data` file. Delete such a folder before a
+    real load, so the folder no longer looks like demo data (and `make demo` will not overwrite it).
+    """
+    bucket_url = dlt.config["destination.filesystem.bucket_url"]
+    dataset_dir = pathlib.Path(bucket_url) / dataset_name
+    if (dataset_dir / "_demo_data").exists():
+        print(f"Removing demo data in {dataset_dir} before loading real data", flush=True)
+        shutil.rmtree(dataset_dir)
+
+
 def load_atlas_billing() -> None:
     destination = os.getenv("DLT_DESTINATION", "filesystem")
 
@@ -259,6 +272,8 @@ def load_atlas_billing() -> None:
         dataset_name=dataset_name,
         progress="log",
     )
+    if destination == "filesystem" and not fixtures_dir:
+        remove_demo_data(dataset_name)
     source = atlas_billing_source(database=database, initial_start_date=initial_start_date, fixtures_dir=fixtures_dir)
     info = pipeline.run(source, loader_file_format="parquet")
     print(f"Pipeline {pipeline.pipeline_name} load step completed in {info}")

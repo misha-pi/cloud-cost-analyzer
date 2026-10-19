@@ -3,6 +3,7 @@ import humanize
 from typing import Any
 import os
 import pathlib
+import shutil
 
 import dlt
 import pyarrow as pa
@@ -48,6 +49,29 @@ def ensure_labels_table(dataset_name: str) -> None:
         "value": pa.array([], pa.string()),
     })
     pq.write_table(empty, labels_dir / "_empty.parquet")
+
+
+def billing_files_missing(dataset_name: str) -> bool:
+    """
+    True when the local billing table has no parquet files, e.g. after `make demo` or `make clear-data`
+    wiped viz_rill/data. dlt keeps the incremental cursor (last export_time) in ~/.dlt, so without a
+    reset it would only load rows newer than the old cursor and the wiped history would stay missing.
+    """
+    bucket_url = dlt.config["destination.filesystem.bucket_url"]
+    table_dir = pathlib.Path(bucket_url) / dataset_name / "bigquery_billing_table"
+    return not any(table_dir.glob("*.parquet"))
+
+
+def remove_demo_data(dataset_name: str) -> None:
+    """
+    `make demo` marks its data with a `_demo_data` file. Delete such a folder before a real load, so
+    real rows are not appended to demo rows (the result would look like real data).
+    """
+    bucket_url = dlt.config["destination.filesystem.bucket_url"]
+    dataset_dir = pathlib.Path(bucket_url) / dataset_name
+    if (dataset_dir / "_demo_data").exists():
+        print(f"Removing demo data in {dataset_dir} before loading real data", flush=True)
+        shutil.rmtree(dataset_dir)
 
 
 # Print a line this often while reading BigQuery. The first row is always reported.
@@ -203,7 +227,14 @@ def load_standalone_table_resource() -> None:
     # Run the pipeline with incremental (append) write disposition
     # This will only load new records based on export_time
     # Use loader_file_format="parquet" in run() to generate parquet files
-    info = pipeline.run(resources, loader_file_format="parquet")
+    # After the local files were wiped, drop the saved cursor and reload from initial_start_date.
+    refresh = None
+    if destination == "filesystem":
+        remove_demo_data(dataset_name)
+    if destination == "filesystem" and billing_files_missing(dataset_name):
+        print("No local GCP billing files: reloading everything from initial_start_date", flush=True)
+        refresh = "drop_sources"
+    info = pipeline.run(resources, loader_file_format="parquet", refresh=refresh)
     if destination == "filesystem":
         ensure_credits_table(dataset_name)
         ensure_labels_table(dataset_name)

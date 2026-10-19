@@ -260,6 +260,19 @@ class SourceFixtureModeTest(unittest.TestCase):
 
 
 
+class RemoveDemoDataTest(unittest.TestCase):
+    def test_demo_folder_removed_real_folder_kept(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                unittest.mock.patch.dict(os.environ, {"DESTINATION__FILESYSTEM__BUCKET_URL": tmp}):
+            real = pathlib.Path(tmp) / "atlas_billing" / "line_items"
+            real.mkdir(parents=True)
+            (real / "a.parquet").write_bytes(b"x")
+            atlas.remove_demo_data("atlas_billing")
+            self.assertTrue((real / "a.parquet").exists())
+            (real.parent / "_demo_data").touch()
+            atlas.remove_demo_data("atlas_billing")
+            self.assertFalse(real.parent.exists())
+
 class LoadStartTest(unittest.TestCase):
     def test_snaps_to_first_of_month(self):
         self.assertEqual(atlas.load_start("2026-09-16T00:00:00Z"), dt.datetime(2026, 9, 1, tzinfo=dt.timezone.utc))
