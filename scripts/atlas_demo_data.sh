@@ -5,7 +5,10 @@
 #
 # Used by `make demo`, `make atlas-demo-data` and the Docker demo (docker/entrypoint.sh).
 # Run from the repository root. PYTHON defaults to `python`; the Makefile passes `uv run python`.
+# Refuses to replace Atlas data loaded by `make run-atlas` unless FORCE=1.
 set -eu
+
+sh scripts/check_no_real_data.sh viz_rill/data/atlas_billing
 
 PYTHON=${PYTHON:-python}
 TMP=$(mktemp -d)
@@ -20,3 +23,4 @@ $PYTHON scripts/generate_atlas_fixtures.py --start "$START" --end "$END" --cap 1
 # Keep this load's dlt state in the temp folder, away from the real pipeline's state.
 ATLAS_BILLING_FIXTURES_DIR="$TMP" DLT_DATA_DIR="$TMP/.dlt" DESTINATION__FILESYSTEM__BUCKET_URL=viz_rill/data \
   $PYTHON pipelines/mongodb_atlas_billing_pipeline.py
+touch viz_rill/data/atlas_billing/_demo_data

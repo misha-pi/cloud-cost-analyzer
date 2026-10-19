@@ -9,10 +9,12 @@ Run: make test-atlas
 """
 import datetime as dt
 import json
+import os
 import pathlib
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from collections import defaultdict
 from decimal import Decimal
 
@@ -255,6 +257,20 @@ class SourceFixtureModeTest(unittest.TestCase):
         self.assertTrue(all(r["embedded_line_item_count"] > 0 for r in rows))
         self.assertNotIn("lineItems", rows[0])
 
+
+
+class RemoveDemoDataTest(unittest.TestCase):
+    def test_demo_folder_removed_real_folder_kept(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                unittest.mock.patch.dict(os.environ, {"DESTINATION__FILESYSTEM__BUCKET_URL": tmp}):
+            real = pathlib.Path(tmp) / "atlas_billing" / "line_items"
+            real.mkdir(parents=True)
+            (real / "a.parquet").write_bytes(b"x")
+            atlas.remove_demo_data("atlas_billing")
+            self.assertTrue((real / "a.parquet").exists())
+            (real.parent / "_demo_data").touch()
+            atlas.remove_demo_data("atlas_billing")
+            self.assertFalse(real.parent.exists())
 
 if __name__ == "__main__":
     unittest.main()
