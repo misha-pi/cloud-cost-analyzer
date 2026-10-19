@@ -1,3 +1,6 @@
+-- @materialize: true
+-- Materialized: stored once as a DuckDB table (rebuilt when the data is refreshed, see `make rill-refresh`)
+-- instead of re-reading the GCP parquet on every dashboard query.
 -- GCP Costs Model
 -- Switches between DuckDB (parquet), MotherDuck, and ClickHouse based on RILL_CONNECTOR env var
 -- Selects ALL columns + derived columns to maintain compatibility with existing dashboards

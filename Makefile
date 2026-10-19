@@ -124,6 +124,7 @@ run-aws: check-secrets
 run-gcp: check-secrets
 	uv run python pipelines/google_bq_incremental_pipeline.py
 	echo "####################################################################"
+	@[ "$(SKIP_RILL_REFRESH)" = "1" ] || $(MAKE) --no-print-directory rill-refresh
 # Local BigQuery emulator (no .dlt/secrets.toml). Start the emulator first.
 run-gcp-emulator:
 	GCP_BILLING_API_ENDPOINT=http://localhost:9050 \
@@ -140,6 +141,7 @@ run-stripe: check-secrets
 run-atlas: check-secrets
 	uv run python pipelines/mongodb_atlas_billing_pipeline.py
 	echo "####################################################################"
+	@[ "$(SKIP_RILL_REFRESH)" = "1" ] || $(MAKE) --no-print-directory rill-refresh
 # Made-up Atlas data in viz_rill/data/atlas_billing (gitignored), no .dlt/secrets.toml needed.
 # `make demo` runs this; run it alone to see the Atlas pages next to your own GCP data.
 atlas-demo-data:
@@ -147,7 +149,21 @@ atlas-demo-data:
 
 #run dlt incremental loads
 # Pipelines we run. Add new sources here (upstream also ran run-aws and run-stripe).
-run-etl: check-secrets run-gcp run-atlas
+# Rill is refreshed once at the end, not after each source.
+run-etl: check-secrets
+	@$(MAKE) --no-print-directory run-gcp SKIP_RILL_REFRESH=1
+	@$(MAKE) --no-print-directory run-atlas SKIP_RILL_REFRESH=1
+	@$(MAKE) --no-print-directory rill-refresh
+
+# Rebuild Rill's models from newly loaded files. Rill does not notice new parquet files by itself, the
+# GCP models are materialized (stored as tables), and models that failed while their files were missing
+# are not retried. Harmless when Rill is not running: it reads the new data when it starts.
+RILL_URL ?= http://localhost:9009
+rill-refresh:
+	@curl -fs -m 10 -X POST "$(RILL_URL)/v1/instances/default/trigger" \
+		-H 'content-type: application/json' -d '{"all": true}' >/dev/null \
+		&& echo "Rill at $(RILL_URL) is rebuilding its models; the dashboards update in a few minutes." \
+		|| echo "Rill is not running at $(RILL_URL); it will read the new data when it starts (make serve)."
 
 test-atlas:
 	uv run python -m unittest discover -s tests -p "test_atlas*.py" -v
