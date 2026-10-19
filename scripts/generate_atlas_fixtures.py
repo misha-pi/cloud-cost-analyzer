@@ -53,6 +53,10 @@ PROJECTS = {
     "Inbox - Production": [("inbox", "M30", "M30", None, None)],
     "Inbox - Staging": [("inbox", "M10", "M10", None, None)],
 }
+# Storage and backup are priced per month and billed per hour or day, so their unit prices have up to 16
+# significant decimals in production (e.g. 0.0197260273972603); keep that, the pipeline must handle it.
+STORAGE_PRICE_PER_GB_HOUR = 0.18 / 730
+BACKUP_PRICE_PER_GB_DAY = 0.77 / 365
 HOURLY_PRICE = {"M10": 0.09, "M20": 0.21, "M30": 0.57, "M40": 1.10, "M50": 2.10, "M60_LOW_CPU": 2.45}
 
 
@@ -117,9 +121,9 @@ def daily_lines(g: Generator, project: str, size: str, day: dt.date, growth: flo
                   round(rng.uniform(1, 60) * growth * weekday, 6), 0.01))
     if production:
         lines.append(("Storage", "ATLAS_GCP_STORAGE_SSD", "GB hours", "non-instance", "GCP",
-                      int(rng.uniform(80, 400) * growth) * 24, 0.00024))
+                      int(rng.uniform(80, 400) * growth) * 24, STORAGE_PRICE_PER_GB_HOUR))
         lines.append(("Backup", "ATLAS_NDS_GCP_PIT_RESTORE_STORAGE", "GB days", "non-instance", "GCP",
-                      round(rng.uniform(5, 300) * growth, 6), 0.0021))
+                      round(rng.uniform(5, 300) * growth, 6), BACKUP_PRICE_PER_GB_DAY))
         lines.append(("Data Transfer", "ATLAS_GCP_DATA_TRANSFER_INTERNET", "GB", "non-instance", "GCP",
                       round(rng.uniform(1, 120) * growth * weekday, 6), 0.12))
     return lines
