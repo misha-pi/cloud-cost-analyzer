@@ -1,2 +1,10 @@
 type: connector
 driver: duckdb
+# Sized for the 2 vCPU / 4 GB server: DuckDB may use at most 2 cores and 2 GB of memory (Rill splits
+# them between its read and write sides), leaving room for Rill itself and the OS. A heavy dashboard
+# then gets slower instead of taking the machine down. Raise both on a bigger machine.
+cpu: 2
+memory_limit_gb: 2
+# DuckDB spills to disk when it runs out of memory; cap that so a runaway query fails instead of
+# filling the disk.
+init_sql: SET max_temp_directory_size = '4GB'

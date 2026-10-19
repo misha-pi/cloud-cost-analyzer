@@ -73,6 +73,20 @@ The real pipelines delete demo-marked data before loading, so real rows are neve
 rows. If the GCP files are missing, the next `make run-gcp` reloads from `initial_start_date` instead
 of loading only rows newer than its saved cursor.
 
+### Dashboard speed and memory
+
+The GCP data is large (millions of hourly rows), so the GCP models that the dashboards query are
+**materialized**: Rill stores them once as DuckDB tables instead of re-reading the parquet files on every
+query (`gcp_costs`, `gcp_labels_per_row`, `gcp_app_costs` and `cloud_provider_costs`; the last two hold
+daily totals). Because the tables are stored, Rill has to rebuild them after new data is loaded:
+`make run-gcp`, `make run-atlas` and `make run-etl` call `make rill-refresh` at the end, which asks the
+running Rill (`RILL_URL`, default `http://localhost:9009`) to rebuild its models. When Rill is not
+running, it reads the new data when it starts.
+
+`viz_rill/connectors/duckdb.yaml` caps DuckDB at 2 cores, 2 GB of memory and 4 GB of temporary disk
+space, sized for the 2 vCPU / 4 GB server, so a heavy page gets slower instead of taking the machine
+down. Raise the caps on a bigger machine.
+
 ## MongoDB Atlas billing
 
 The Atlas pages (**MongoDB Atlas Cost by Cluster**, **GCP and MongoDB Atlas Cost**) read the
