@@ -66,6 +66,7 @@ measures:
     display_name: "Net Cost (after credits)"
     expression: "SUM(net_cost)"
     format_preset: currency_usd
+    valid_percent_of_total: true
 
   - name: total_usage
     display_name: "Total Usage"
