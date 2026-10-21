@@ -12,18 +12,31 @@ rows:
   - items:
       - markdown:
           content: |
-            **Where did cost jump?** Everything ends on the last complete day (see *Data as of*): the newest day
-            is still being billed. GCP is net cost after credits; Atlas is the billed cost. Day and week numbers
-            leave out once-a-month charges such as GCP Support, which would show as a spike on the same day each
-            month; month to date keeps them. The top movers table has the dollar amounts behind each tile.
+            ### Where did cost jump? How to read the numbers
+            Every number ends on **{{ metrics_sql "SELECT as_of_date FROM cost_spike_metrics" }}**, the last day all providers have complete. Newer days are left
+            out because they are still being billed (see *Newest day loaded*).
+
+            | Tile | What it compares |
+            |---|---|
+            | **Latest day** | Cost on {{ metrics_sql "SELECT latest_day_period FROM cost_spike_metrics" }} |
+            | **Latest day vs 7-day avg %** | {{ metrics_sql "SELECT latest_day_period FROM cost_spike_metrics" }} vs the average day of {{ metrics_sql "SELECT avg_7d_period FROM cost_spike_metrics" }}. Catches a one-day jump. |
+            | **Last 7 days vs previous 7 %** | Total of {{ metrics_sql "SELECT last_7d_period FROM cost_spike_metrics" }} vs total of {{ metrics_sql "SELECT prev_7d_period FROM cost_spike_metrics" }}. Catches a rise that lasts several days. |
+            | **Month to date vs last month %** | Average cost per day of {{ metrics_sql "SELECT mtd_period FROM cost_spike_metrics" }} vs {{ metrics_sql "SELECT prev_mtd_period FROM cost_spike_metrics" }}. Per day, because last month can be shorter. |
+
+            Positive % = spending more. GCP is net cost after credits; MongoDB Atlas is the billed cost (bought through
+            the GCP Marketplace, counted once, as Atlas). Once-a-month charges such as GCP Support on the 1st would look
+            like a spike every month, so the day and 7-day numbers and the top movers leave them out. Month to date and
+            the charts include them: the 1st of the month jumps and lifts the charts' 7-day average for the next week.
+            Atlas org-level lines such as Support show as *(no project) / (no cluster)*.
         width: 8
       - table:
           metrics_view: cost_spike_metrics
           title: "Data as of"
           columns: [provider, as_of_date, latest_loaded_day]
+          description: "Newest day loaded is still partial; if it is days behind today, that provider's load stopped."
           hide_totals_row: true
         width: 4
-    height: 120px
+    height: 350px
   - items:
       - kpi_grid:
           metrics_view: cost_spike_metrics
@@ -62,6 +75,7 @@ rows:
       - line_chart:
           metrics_view: cost_spike_daily_metrics
           title: "Total daily cost and its 7-day average"
+          description: "A spike is a day well above its 7-day average (the average day of the 7 days before it)."
           x:
             field: date
             type: temporal
@@ -74,6 +88,7 @@ rows:
       - line_chart:
           metrics_view: cost_spike_daily_metrics
           title: "Daily cost by provider"
+          description: "Which provider a jump in the total comes from."
           x:
             field: date
             type: temporal
@@ -90,6 +105,7 @@ rows:
       - line_chart:
           metrics_view: cost_spike_daily_metrics
           title: "GCP daily cost: top 5 services"
+          description: "Top 5 services by cost in the last 30 days; the rest is in Other."
           dimension_filters: "provider IN ('GCP')"
           hide_local_filters: true
           x:
@@ -107,6 +123,7 @@ rows:
       - line_chart:
           metrics_view: cost_spike_daily_metrics
           title: "Atlas daily cost: top 5 project / clusters"
+          description: "Top 5 project / clusters by cost in the last 30 days; the rest is in Other."
           dimension_filters: "provider IN ('MongoDB Atlas')"
           hide_local_filters: true
           x:
@@ -126,6 +143,7 @@ rows:
       - table:
           metrics_view: cost_spike_metrics
           title: "Top movers: largest increase, last 7 days vs previous 7"
+          description: "Largest $ increase first. Same comparisons as the tiles; once-a-month charges are not listed."
           columns: [wow_change, provider, service, component, latest_day_cost, prev_7d_avg, latest_vs_avg_pct, last_7d_cost, prev_7d_cost, wow_change_pct]
           dimension_filters: "charge_pattern IN ('Daily usage')"
           hide_local_filters: true

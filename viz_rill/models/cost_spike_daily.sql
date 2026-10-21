@@ -10,8 +10,9 @@
 -- series is what the per-provider charts draw: the provider's top 5 of the last 30 days, the rest as
 -- "Other". Atlas spend changes per cluster, so Atlas uses project / cluster; other providers use service.
 --
--- cost_7d_avg is the average of the 7 days up to and including the day, worked out here because Rill
--- window measures only add up the rows a chart loads. Every series has a row for every day (0 when
+-- cost_7d_avg is the average day of the 7 days before the day (the same baseline as the page's "7-day
+-- average" tile, so a spike shows as the day rising above it), worked out here because Rill window
+-- measures only add up the rows a chart loads. Every series has a row for every day (0 when
 -- nothing was billed), so the averages of several series add up to the average of their total.
 WITH daily AS (
   SELECT
@@ -61,7 +62,7 @@ SELECT
   s.series,
   COALESCE(g.cost, 0) AS cost,
   AVG(COALESCE(g.cost, 0)) OVER (
-    PARTITION BY s.provider, s.series ORDER BY s.date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    PARTITION BY s.provider, s.series ORDER BY s.date ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
   ) AS cost_7d_avg
 FROM spine s
 LEFT JOIN grouped g ON g.provider = s.provider AND g.series = s.series AND g.date = s.date
