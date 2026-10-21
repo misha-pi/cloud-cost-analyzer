@@ -4,6 +4,11 @@
 -- GCP Costs Model
 -- Switches between DuckDB (parquet), MotherDuck, and ClickHouse based on RILL_CONNECTOR env var
 -- Selects ALL columns + derived columns to maintain compatibility with existing dashboards
+--
+-- MongoDB Atlas is bought through the GCP Marketplace, so the GCP export also bills it (service
+-- "MongoDB Atlas (pay-as-you-go)"). That is the same spend as the Atlas billing data, day by day, so it is
+-- left out here: GCP pages show GCP infrastructure only, and Atlas is counted once, on the Atlas pages
+-- and the Atlas side of the GCP + Atlas page.
 
 {{ if eq .env.RILL_CONNECTOR "clickhouse" }}
 -- ClickHouse: Query table directly
@@ -19,6 +24,7 @@ SELECT
   *
 FROM gcp_costs___bigquery_billing_table
 WHERE cost IS NOT NULL
+  AND coalesce(service__description, '') NOT LIKE 'MongoDB Atlas%'
 
 {{ else if eq .env.RILL_CONNECTOR "motherduck" }}
 -- MotherDuck: Query table in cloud DuckDB (same SQL syntax as local DuckDB)
@@ -33,6 +39,7 @@ SELECT
   *
 FROM gcp_costs.bigquery_billing_table
 WHERE cost IS NOT NULL
+  AND COALESCE(service__description, '') NOT LIKE 'MongoDB Atlas%'
 
 {{ else }}
 -- DuckDB: Read from parquet files (default for local development)
@@ -54,5 +61,6 @@ SELECT
 FROM {{ ref "gcp_billing_raw" }} b
 LEFT JOIN {{ ref "gcp_credits_per_row" }} c ON c._dlt_parent_id = b._dlt_id
 WHERE b.cost IS NOT NULL
+  AND COALESCE(b.service__description, '') NOT LIKE 'MongoDB Atlas%'
 
 {{ end }}

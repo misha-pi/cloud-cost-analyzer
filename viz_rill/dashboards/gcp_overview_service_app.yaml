@@ -14,7 +14,7 @@ rows:
             Monthly GCP net cost (after credits) from the billing export: each service's cost split across apps,
             and the same numbers with apps as rows. Pick a month in the time filter. Apps are assigned by the rules
             in `models/gcp_app_rules.sql`; unmatched cost goes to **other** and Support is spread by cost share.
-            MongoDB Atlas is not included yet.
+            MongoDB Atlas, which GCP bills through the Marketplace, is left out here; see the MongoDB Atlas pages.
         width: 12
     height: 90px
   - items:
