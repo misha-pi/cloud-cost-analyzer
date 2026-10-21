@@ -2,9 +2,9 @@
 -- Daily cost for the Cost Spikes page (DuckDB mode only): one row per day, provider and line (`series`).
 -- Built from cloud_provider_costs, so a new provider shows up here once it has a block there.
 --
--- It stops at the last complete day (as_of_date). The newest day of each provider is still being filled in
+-- It stops at the last complete day (as_of_date). The latest day of each provider is still being filled in
 -- (the GCP export runs about a day behind and keeps adding rows and credits), and the combined line must
--- not end in a fake drop when one provider is a day behind; so as_of_date is the day before the newest day
+-- not end in a fake drop when one provider is a day behind; so as_of_date is the day before the latest day
 -- of the provider that is furthest behind.
 --
 -- series is what the per-provider charts draw: the provider's top 5 of the last 30 days, the rest as

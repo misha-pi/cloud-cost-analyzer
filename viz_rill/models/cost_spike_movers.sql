@@ -8,7 +8,7 @@
 -- charge_pattern marks once-a-month charges (e.g. GCP Support): billed on 2 to 4 of the last 90 days, all
 -- on the same day of the month. They would show as a spike every month, so the day and 7-day measures of
 -- cost_spike_metrics leave them out; month to date keeps them.
--- latest_loaded_day is the newest day loaded for the provider, to spot a provider whose load stopped.
+-- latest_loaded_day is the latest day loaded for the provider, to spot a provider whose load stopped.
 WITH as_of AS (
   SELECT
     as_of_date,

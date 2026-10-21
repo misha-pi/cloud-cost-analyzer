@@ -14,7 +14,7 @@ rows:
           content: |
             ### Where did cost jump? How to read the numbers
             Every number ends on **{{ metrics_sql "SELECT as_of_date FROM cost_spike_metrics" }}**, the last day all providers have complete. Newer days are left
-            out because they are still being billed (see *Newest day loaded*).
+            out because they are still being billed (see *Latest day loaded*).
 
             | Tile | What it compares |
             |---|---|
@@ -33,7 +33,7 @@ rows:
           metrics_view: cost_spike_metrics
           title: "Data as of"
           columns: [provider, as_of_date, latest_loaded_day]
-          description: "Newest day loaded is still partial; if it is days behind today, that provider's load stopped."
+          description: "Latest day loaded is still partial; if it is days behind today, that provider's load stopped."
           hide_totals_row: true
         width: 4
     height: 350px

@@ -26,9 +26,9 @@ dimensions:
     expression: "STRFTIME(as_of_date, '%Y-%m-%d')"
     description: "Last complete day every provider has; all numbers end on this day"
   - name: latest_loaded_day
-    display_name: Newest day loaded
+    display_name: Latest day loaded
     expression: "STRFTIME(latest_loaded_day, '%Y-%m-%d')"
-    description: "Newest (still partial) day loaded for the provider; far behind today means its load stopped"
+    description: "Latest (still partial) day loaded for the provider; far behind today means its load stopped"
   # The days each number covers, for the page text
   - name: latest_day_period
     display_name: Latest day (period)
