@@ -19,23 +19,72 @@ rows:
         width: 12
     height: 100px
 
-  # KPIs, compared with the previous period
+  # KPIs, compared with the previous period, each with a short explanation underneath.
+  # Money first (Atlas cost = Cluster cost + Org-level cost), then counts and usage.
   - items:
       - kpi_grid:
           metrics_view: atlas_cost_metrics
-          measures:
-            [
-              total_cost,
-              cluster_cost,
-              org_level_cost,
-              avg_daily_cost,
-              cluster_count,
-              cluster_name_count,
-              instance_hours,
-            ]
+          measures: [total_cost]
           comparison: [delta, percent_change]
-        width: 12
-    height: 180px
+        width: 3
+      - kpi_grid:
+          metrics_view: atlas_cost_metrics
+          measures: [cluster_cost]
+          comparison: [delta, percent_change]
+        width: 3
+      - kpi_grid:
+          metrics_view: atlas_cost_metrics
+          measures: [org_level_cost]
+          comparison: [delta, percent_change]
+        width: 3
+      - kpi_grid:
+          metrics_view: atlas_cost_metrics
+          measures: [avg_daily_cost]
+          comparison: [delta, percent_change]
+        width: 3
+    height: 160px
+  - items:
+      - markdown:
+          content: "Everything Atlas billed in the period. A closed month matches its invoice subtotal."
+        width: 3
+      - markdown:
+          content: "The part of Atlas cost billed to a specific cluster."
+        width: 3
+      - markdown:
+          content: "The part not billed to any cluster (Support, Charts, Data Lake, object storage). Atlas cost = Cluster cost + Org-level cost."
+        width: 3
+      - markdown:
+          content: "Atlas cost divided by the number of days with data, to compare periods of different length."
+        width: 3
+    height: 80px
+  - items:
+      - kpi_grid:
+          metrics_view: atlas_cost_metrics
+          measures: [cluster_count]
+          comparison: [delta, percent_change]
+        width: 4
+      - kpi_grid:
+          metrics_view: atlas_cost_metrics
+          measures: [cluster_name_count]
+          comparison: [delta, percent_change]
+        width: 4
+      - kpi_grid:
+          metrics_view: atlas_cost_metrics
+          measures: [instance_hours]
+          comparison: [delta, percent_change]
+        width: 4
+    height: 160px
+  - items:
+      - markdown:
+          content: "Distinct clusters: each project + cluster pair counted once. This is the real number of clusters."
+        width: 4
+      - markdown:
+          content: "Distinct cluster names. Lower than Clusters because the same name can exist in several projects."
+        width: 4
+      - markdown:
+          content: "Hours the cluster machines ran, every node counted. A usage figure, not money."
+        width: 4
+    height: 70px
 
   # Cost over time by cluster, and the share by category
   - items:

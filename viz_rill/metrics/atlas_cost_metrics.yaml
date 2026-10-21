@@ -58,6 +58,7 @@ measures:
   - name: total_cost
     display_name: "Atlas cost"
     expression: "SUM(cost)"
+    description: "Everything Atlas billed in the period; a closed month matches its invoice subtotal"
     format_preset: currency_usd
     valid_percent_of_total: true
   - name: cluster_cost
@@ -73,10 +74,12 @@ measures:
   - name: avg_daily_cost
     display_name: "Avg daily cost"
     expression: "SUM(cost) / NULLIF(COUNT(DISTINCT date), 0)"
+    description: "Atlas cost divided by the number of days with data, to compare periods of different length"
     format_preset: currency_usd
   - name: cluster_count
     display_name: "Clusters (per project)"
     expression: "COUNT(DISTINCT CASE WHEN is_cluster_cost THEN project_cluster END)"
+    description: "Distinct clusters: each project + cluster pair counted once"
     format_preset: humanize
   - name: cluster_name_count
     display_name: "Cluster names"
@@ -86,6 +89,7 @@ measures:
   - name: instance_hours
     display_name: "Instance hours"
     expression: "SUM(CASE WHEN category = 'Instances' THEN quantity ELSE 0 END)"
+    description: "Hours the cluster machines ran, every node counted (usage, not money)"
     format_preset: humanize
   - name: total_quantity
     display_name: "Quantity"
