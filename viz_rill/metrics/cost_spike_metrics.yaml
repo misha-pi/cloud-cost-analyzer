@@ -60,12 +60,12 @@ measures:
     expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN prev_7d_cost ELSE 0 END)"
     format_preset: currency_usd
   - name: wow_change
-    display_name: "Week over week"
+    display_name: "Last 7 days vs previous 7"
     expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN last_7d_cost - prev_7d_cost ELSE 0 END)"
     description: "Last 7 days minus the 7 days before"
     format_preset: currency_usd
   - name: wow_change_pct
-    display_name: "Week over week %"
+    display_name: "Last 7 days vs previous 7 %"
     expression: >
       SUM(CASE WHEN charge_pattern = 'Daily usage' THEN last_7d_cost - prev_7d_cost ELSE 0 END)
       / NULLIF(SUM(CASE WHEN charge_pattern = 'Daily usage' THEN prev_7d_cost ELSE 0 END), 0)

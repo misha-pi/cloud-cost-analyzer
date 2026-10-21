@@ -125,7 +125,7 @@ rows:
   - items:
       - table:
           metrics_view: cost_spike_metrics
-          title: "Top movers: biggest week-over-week increase first"
+          title: "Top movers: largest increase, last 7 days vs previous 7"
           columns: [wow_change, provider, service, component, latest_day_cost, prev_7d_avg, latest_vs_avg_pct, last_7d_cost, prev_7d_cost, wow_change_pct]
           dimension_filters: "charge_pattern IN ('Daily usage')"
           hide_local_filters: true
