@@ -1,0 +1,85 @@
+# Spike signals per provider, service and project / cluster for the Cost Spikes page (model: cost_spike_movers)
+# No timeseries: every number is already as of the last complete day, so the page's time range does not apply.
+# The day and week measures leave out once-a-month charges (charge_pattern); month to date keeps them.
+version: 1
+type: metrics_view
+
+display_name: Cost Spikes - Signals
+model: cost_spike_movers
+
+dimensions:
+  - name: provider
+    display_name: Provider
+    column: provider
+  - name: service
+    display_name: Service / category
+    column: service
+  - name: component
+    display_name: Project / cluster
+    column: component
+  - name: charge_pattern
+    display_name: Charge pattern
+    column: charge_pattern
+    description: "Monthly charge: billed on the same day each month (e.g. GCP Support); left out of the day and week numbers"
+  - name: as_of_date
+    display_name: Data as of
+    expression: "STRFTIME(as_of_date, '%Y-%m-%d')"
+    description: "Last complete day every provider has; all numbers end on this day"
+  - name: latest_loaded_day
+    display_name: Newest day loaded
+    expression: "STRFTIME(latest_loaded_day, '%Y-%m-%d')"
+    description: "Newest (still partial) day loaded for the provider; far behind today means its load stopped"
+
+measures:
+  - name: latest_day_cost
+    display_name: "Latest day"
+    expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN latest_day_cost ELSE 0 END)"
+    description: "Cost on the last complete day"
+    format_preset: currency_usd
+  - name: prev_7d_avg
+    display_name: "7-day average"
+    expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN prev_7d_avg ELSE 0 END)"
+    description: "Average daily cost of the 7 days before the latest day"
+    format_preset: currency_usd
+  - name: latest_vs_avg
+    display_name: "Latest day vs 7-day avg"
+    expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN latest_day_cost - prev_7d_avg ELSE 0 END)"
+    format_preset: currency_usd
+  - name: latest_vs_avg_pct
+    display_name: "Latest day vs 7-day avg %"
+    expression: >
+      SUM(CASE WHEN charge_pattern = 'Daily usage' THEN latest_day_cost - prev_7d_avg ELSE 0 END)
+      / NULLIF(SUM(CASE WHEN charge_pattern = 'Daily usage' THEN prev_7d_avg ELSE 0 END), 0)
+    format_preset: percentage
+  - name: last_7d_cost
+    display_name: "Last 7 days"
+    expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN last_7d_cost ELSE 0 END)"
+    format_preset: currency_usd
+  - name: prev_7d_cost
+    display_name: "Previous 7 days"
+    expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN prev_7d_cost ELSE 0 END)"
+    format_preset: currency_usd
+  - name: wow_change
+    display_name: "Week over week"
+    expression: "SUM(CASE WHEN charge_pattern = 'Daily usage' THEN last_7d_cost - prev_7d_cost ELSE 0 END)"
+    description: "Last 7 days minus the 7 days before"
+    format_preset: currency_usd
+  - name: wow_change_pct
+    display_name: "Week over week %"
+    expression: >
+      SUM(CASE WHEN charge_pattern = 'Daily usage' THEN last_7d_cost - prev_7d_cost ELSE 0 END)
+      / NULLIF(SUM(CASE WHEN charge_pattern = 'Daily usage' THEN prev_7d_cost ELSE 0 END), 0)
+    format_preset: percentage
+  - name: mtd_cost
+    display_name: "Month to date"
+    expression: "SUM(mtd_cost)"
+    format_preset: currency_usd
+  - name: prev_mtd_cost
+    display_name: "Last month, same days"
+    expression: "SUM(prev_mtd_cost)"
+    description: "Last month from the 1st up to the same day of the month"
+    format_preset: currency_usd
+  - name: mtd_change_pct
+    display_name: "Month to date vs last month %"
+    expression: "(SUM(mtd_cost) - SUM(prev_mtd_cost)) / NULLIF(SUM(prev_mtd_cost), 0)"
+    format_preset: percentage

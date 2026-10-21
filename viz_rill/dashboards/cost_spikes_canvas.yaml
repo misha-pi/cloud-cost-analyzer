@@ -1,0 +1,140 @@
+# One page to watch for cost spikes across providers (GCP and MongoDB Atlas for now).
+# Models: cost_spike_daily (charts) and cost_spike_movers (tiles and top movers), both built from
+# cloud_provider_costs: a new provider needs only its own block there, plus a tile row and a top 5 chart here.
+type: canvas
+display_name: "Cost Spikes"
+
+defaults:
+  time_range: P90D
+  comparison_mode: none
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            **Where did cost jump?** Everything ends on the last complete day (see *Data as of*): the newest day
+            is still being billed. GCP is net cost after credits; Atlas is the billed cost. Day and week numbers
+            leave out once-a-month charges such as GCP Support, which would show as a spike on the same day each
+            month; month to date keeps them. The top movers table has the dollar amounts behind each tile.
+        width: 8
+      - table:
+          metrics_view: cost_spike_metrics
+          title: "Data as of"
+          columns: [provider, as_of_date, latest_loaded_day]
+          hide_totals_row: true
+        width: 4
+    height: 120px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "All providers"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+        width: 12
+    height: 130px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "GCP"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "provider IN ('GCP')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "MongoDB Atlas"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "provider IN ('MongoDB Atlas')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+  - items:
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "Total daily cost and its 7-day average"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            fields: [daily_cost, cost_7d_avg]
+            type: quantitative
+            zeroBasedOrigin: true
+        width: 6
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "Daily cost by provider"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: provider
+            type: nominal
+        width: 6
+    height: 360px
+  - items:
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "GCP daily cost: top 5 services"
+          dimension_filters: "provider IN ('GCP')"
+          hide_local_filters: true
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            limit: 6
+        width: 6
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "Atlas daily cost: top 5 project / clusters"
+          dimension_filters: "provider IN ('MongoDB Atlas')"
+          hide_local_filters: true
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            limit: 6
+        width: 6
+    height: 360px
+  - items:
+      - table:
+          metrics_view: cost_spike_metrics
+          title: "Top movers: biggest week-over-week increase first"
+          columns: [wow_change, provider, service, component, latest_day_cost, prev_7d_avg, latest_vs_avg_pct, last_7d_cost, prev_7d_cost, wow_change_pct]
+          dimension_filters: "charge_pattern IN ('Daily usage')"
+          hide_local_filters: true
+          hide_totals_row: true
+        width: 12
+    height: 460px
+
+time_ranges: [P30D, P90D, P6M, P12M]
+filters:
+  enable: true
+
+theme: theme
