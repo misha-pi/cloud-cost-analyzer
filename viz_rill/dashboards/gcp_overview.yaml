@@ -87,7 +87,7 @@ rows:
       - leaderboard:
           metrics_view: gcp_cost_metrics
           title: "By region"
-          dimensions: [location__location]
+          dimensions: [location__location, location__country]
           measures: [total_net_cost]
           num_rows: 15
         width: 4
