@@ -25,7 +25,8 @@ rows:
 
             Positive % = spending more. GCP is net cost after credits; MongoDB Atlas is the billed cost (bought through
             the GCP Marketplace, counted once, as Atlas). Once-a-month charges such as GCP Support on the 1st would look
-            like a spike every month, so the day and 7-day numbers and the top movers leave them out. Month to date and
+            like a spike every month, so the day and 7-day numbers and the top movers leave them out; they have their own
+            table at the bottom, comparing this month with last month. Month to date and
             the charts include them: the 1st of the month jumps and lifts the charts' 7-day average for the next week.
             Atlas org-level lines such as Support show as *(no project) / (no cluster)*.
         width: 8
@@ -150,6 +151,17 @@ rows:
           hide_totals_row: true
         width: 12
     height: 460px
+  - items:
+      - table:
+          metrics_view: cost_spike_metrics
+          title: "Once-a-month charges: this month vs last month"
+          description: "Costs billed once a month (left out of the tiles and top movers above). Month to date vs last month over the same days, as totals."
+          columns: [provider, service, component, mtd_cost, prev_mtd_cost, mtd_change, mtd_change_total_pct]
+          dimension_filters: "charge_pattern IN ('Monthly charge')"
+          hide_local_filters: true
+          hide_totals_row: true
+        width: 12
+    height: 180px
 
 time_ranges: [P30D, P90D, P6M, P12M]
 filters:

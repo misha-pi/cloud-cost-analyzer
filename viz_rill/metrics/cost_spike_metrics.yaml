@@ -104,6 +104,17 @@ measures:
     expression: "SUM(prev_mtd_cost)"
     description: "Total of last month from the 1st to the same day of the month (its last day if last month is shorter)"
     format_preset: currency_usd
+  # Totals, not per day: for the once-a-month charges table, where each month has one bill.
+  - name: mtd_change
+    display_name: "Change"
+    expression: "SUM(mtd_cost) - SUM(prev_mtd_cost)"
+    description: "Month to date minus last month over the same days"
+    format_preset: currency_usd
+  - name: mtd_change_total_pct
+    display_name: "Change %"
+    expression: "(SUM(mtd_cost) - SUM(prev_mtd_cost)) / NULLIF(SUM(prev_mtd_cost), 0)"
+    description: "Month to date vs last month over the same days, as totals"
+    format_preset: percentage
   # Compared per day: at the end of a month last month can have fewer days (Mar 1-31 vs Feb 1-28), and
   # comparing totals would show that as growth.
   - name: mtd_change_pct
