@@ -24,11 +24,8 @@ rows:
             | **Month to date vs last month %** | Average cost per day of {{ metrics_sql "SELECT mtd_period FROM cost_spike_metrics" }} vs {{ metrics_sql "SELECT prev_mtd_period FROM cost_spike_metrics" }}. Per day, because last month can be shorter. |
 
             Positive % = spending more. GCP is net cost after credits; MongoDB Atlas is the billed cost (bought through
-            the GCP Marketplace, counted once, as Atlas). Once-a-month charges such as GCP Support on the 1st would look
-            like a spike every month, so the day and 7-day numbers and the top movers leave them out; they have their own
-            table at the bottom, comparing this month with last month. Month to date and
-            the charts include them: the 1st of the month jumps and lifts the charts' 7-day average for the next week.
-            Atlas org-level lines such as Support show as *(no project) / (no cluster)*.
+            the GCP Marketplace, counted once, as Atlas). Atlas lines not billed to a cluster show as
+            *(no project) / (no cluster)*.
         width: 8
       - table:
           metrics_view: cost_spike_metrics
@@ -37,7 +34,7 @@ rows:
           description: "Latest day loaded is still partial; if it is days behind today, that provider's load stopped."
           hide_totals_row: true
         width: 4
-    height: 350px
+    height: 300px
   - items:
       - kpi_grid:
           metrics_view: cost_spike_metrics
@@ -144,24 +141,11 @@ rows:
       - table:
           metrics_view: cost_spike_metrics
           title: "Top movers: largest increase, last 7 days vs previous 7"
-          description: "Largest $ increase first. Same comparisons as the tiles; once-a-month charges are not listed."
+          description: "Largest $ increase first. Same comparisons as the tiles."
           columns: [wow_change, provider, service, component, latest_day_cost, prev_7d_avg, latest_vs_avg_pct, last_7d_cost, prev_7d_cost, wow_change_pct]
-          dimension_filters: "charge_pattern IN ('Daily usage')"
-          hide_local_filters: true
           hide_totals_row: true
         width: 12
     height: 460px
-  - items:
-      - table:
-          metrics_view: cost_spike_metrics
-          title: "Once-a-month charges: this month vs last month"
-          description: "Costs billed once a month (left out of the tiles and top movers above). Month to date vs last month over the same days, as totals."
-          columns: [provider, service, component, mtd_cost, prev_mtd_cost, mtd_change, mtd_change_total_pct]
-          dimension_filters: "charge_pattern IN ('Monthly charge')"
-          hide_local_filters: true
-          hide_totals_row: true
-        width: 12
-    height: 180px
 
 time_ranges: [P30D, P90D, P6M, P12M]
 filters:

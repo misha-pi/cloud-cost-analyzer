@@ -61,8 +61,10 @@ SELECT
   s.provider,
   s.series,
   COALESCE(g.cost, 0) AS cost,
-  AVG(COALESCE(g.cost, 0)) OVER (
+  -- Divided by 7, not AVG: in a provider's first week there are fewer than 7 days before, and AVG of those
+  -- would not add up across providers (a new provider would never show as a jump).
+  COALESCE(SUM(COALESCE(g.cost, 0)) OVER (
     PARTITION BY s.provider, s.series ORDER BY s.date ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
-  ) AS cost_7d_avg
+  ), 0) / 7 AS cost_7d_avg
 FROM spine s
 LEFT JOIN grouped g ON g.provider = s.provider AND g.series = s.series AND g.date = s.date

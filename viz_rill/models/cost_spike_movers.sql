@@ -4,10 +4,6 @@
 -- that day vs the 7 days before it, the last 7 days vs the 7 days before, and month to date vs last month
 -- up to the same day of the month (the last day of a shorter month).
 -- The *_period columns spell out the days each number covers, for the page text (same on every row).
---
--- charge_pattern marks once-a-month charges (e.g. GCP Support): billed on 2 to 4 of the last 90 days, all
--- on the same day of the month. They would show as a spike every month, so the day and 7-day measures of
--- cost_spike_metrics leave them out; month to date keeps them.
 -- latest_loaded_day is the latest day loaded for the provider, to spot a provider whose load stopped.
 WITH as_of AS (
   SELECT
@@ -27,7 +23,8 @@ daily AS (
     SUM(c.cost) AS cost
   FROM {{ ref "cloud_provider_costs" }} c
   CROSS JOIN as_of a
-  WHERE c.date > a.as_of_date - 90 AND c.date <= a.as_of_date
+  -- From the 1st of last month (or 14 days back, if earlier) to as_of_date: every period below
+  WHERE c.date >= LEAST(a.month_start - INTERVAL 1 MONTH, a.as_of_date - 13) AND c.date <= a.as_of_date
   GROUP BY ALL
 ),
 
@@ -45,9 +42,7 @@ signals AS (
     COALESCE(SUM(cost) FILTER (WHERE date BETWEEN as_of_date - 13 AND as_of_date - 7), 0) AS prev_7d_cost,
     COALESCE(SUM(cost) FILTER (WHERE date >= month_start), 0) AS mtd_cost,
     COALESCE(SUM(cost) FILTER (WHERE date >= month_start - INTERVAL 1 MONTH
-                                 AND date <= prev_month_same_day), 0) AS prev_mtd_cost,
-    COUNT(DISTINCT date) FILTER (WHERE cost <> 0) AS billed_days,
-    COUNT(DISTINCT DAY(date)) FILTER (WHERE cost <> 0) AS billed_days_of_month
+                                 AND date <= prev_month_same_day), 0) AS prev_mtd_cost
   FROM daily
   GROUP BY ALL
 )
@@ -56,8 +51,6 @@ SELECT
   s.provider,
   s.service,
   s.component,
-  CASE WHEN s.billed_days BETWEEN 2 AND 4 AND s.billed_days_of_month = 1 THEN 'Monthly charge'
-       ELSE 'Daily usage' END AS charge_pattern,
   s.as_of_date,
   l.latest_loaded_day,
   s.latest_day_cost,

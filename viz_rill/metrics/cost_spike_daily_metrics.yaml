@@ -26,5 +26,5 @@ measures:
   - name: cost_7d_avg
     display_name: "7-day average"
     expression: "SUM(cost_7d_avg) / NULLIF(COUNT(DISTINCT date), 0)"
-    description: "Average daily cost of the 7 days before the day"
+    description: "Average daily cost of the 7 days before the day (at a week or month grain: the average of these daily values)"
     format_preset: currency_usd
