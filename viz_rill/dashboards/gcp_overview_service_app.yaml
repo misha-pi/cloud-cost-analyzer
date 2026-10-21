@@ -15,8 +15,9 @@ rows:
             and the same numbers with apps as rows. Pick a month in the time filter. Apps are assigned by the rules
             in `models/gcp_app_rules.sql`; unmatched cost goes to **other** and Support is spread by cost share.
             MongoDB Atlas, which GCP bills through the Marketplace, is left out here; see the MongoDB Atlas pages.
+            Below the tables, click a service or a project to filter the other list (this doesn't filter the app tables).
         width: 12
-    height: 90px
+    height: 110px
   - items:
       - pivot:
           metrics_view: gcp_app_cost_metrics
@@ -35,6 +36,25 @@ rows:
           measures: [total_net_cost]
         width: 12
     height: 440px
+
+  # Services and projects side by side: click a value in either list to filter the other one.
+  # They use gcp_cost_metrics (the app data has no project), so they don't filter the app tables.
+  - items:
+      - leaderboard:
+          metrics_view: gcp_cost_metrics
+          title: "Services (click one to see its projects)"
+          dimensions: [service__description]
+          measures: [total_net_cost]
+          num_rows: 15
+        width: 6
+      - leaderboard:
+          metrics_view: gcp_cost_metrics
+          title: "Projects (click one to see its services)"
+          dimensions: [project__id]
+          measures: [total_net_cost]
+          num_rows: 15
+        width: 6
+    height: 420px
   - items:
       - leaderboard:
           metrics_view: gcp_app_cost_metrics
