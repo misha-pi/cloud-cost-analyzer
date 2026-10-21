@@ -1,46 +1,136 @@
-# GCP Cost Overview Dashboard (auto-generated)
+# GCP Cost Overview: the main GCP page (metrics view: gcp_cost_metrics).
+# Merges the former "GCP Product Deep Dive" page. Everything is net cost after credits, like the
+# "GCP Cost by Service and App" and "GCP and MongoDB Atlas Cost" pages. Time charts follow the time grain
+# picked in the time filter; any other breakdown is in the GCP Cost Explorer.
 
 type: canvas
 display_name: "GCP Cost Overview"
 
 defaults:
   time_range: P30D
+  comparison_mode: time
 
 rows:
   - items:
-      - kpi_grid:
-          measures:
-            - total_cost
-            - total_credits
-            - total_net_cost
-            - record_count
-            - total_usage
-            - cost_per_unit
-          metrics_view: gcp_cost_metrics
+      - markdown:
+          content: |
+            GCP cost from the billing export, as **net cost after credits** (the same number as the other GCP pages).
+            "Cost before credits" and "Credits" show how much credits saved.
         width: 12
-    height: 200px
+    height: 80px
+
+  - items:
+      - kpi_grid:
+          metrics_view: gcp_cost_metrics
+          measures: [total_net_cost, total_cost, total_credits, record_count]
+          comparison: [delta, percent_change]
+        width: 12
+    height: 160px
+
+  # Trend
+  - items:
+      - stacked_bar:
+          metrics_view: gcp_cost_metrics
+          title: "Net cost over time by service"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: total_net_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: service__description
+            type: nominal
+            limit: 10
+        width: 12
+    height: 360px
+
+  # Services: one row per service, with its name and ID
+  - items:
+      - table:
+          metrics_view: gcp_cost_metrics
+          title: "Top services"
+          columns: [service__description, service__id, total_net_cost]
+        width: 12
+    height: 400px
+
+  # Projects: one row per project, with its name, ID and number
+  - items:
+      - table:
+          metrics_view: gcp_cost_metrics
+          title: "Top projects"
+          columns: [project__name, project__id, project__number, total_net_cost]
+        width: 12
+    height: 360px
+
+  # The same service and project costs as charts
+  - items:
+      - bar_chart:
+          metrics_view: gcp_cost_metrics
+          title: "Service cost distribution"
+          x:
+            field: service__description
+            type: nominal
+            limit: 10
+          y:
+            field: total_net_cost
+            type: quantitative
+            zeroBasedOrigin: true
+        width: 6
+      - pie_chart:
+          metrics_view: gcp_cost_metrics
+          title: "Project cost distribution"
+          measure:
+            field: total_net_cost
+            type: quantitative
+          color:
+            field: project__name
+            type: nominal
+            limit: 10
+          innerRadius: 50
+        width: 6
+    height: 320px
+
+  # Regions: one row per region, with its country
+  - items:
+      - table:
+          metrics_view: gcp_cost_metrics
+          title: "By region"
+          columns: [location__location, location__country, total_net_cost]
+        width: 12
+    height: 320px
+
+  # SKUs
   - items:
       - leaderboard:
-          dimensions:
-            - service__description
-          measures:
-            - total_cost
-          num_rows: 10
           metrics_view: gcp_cost_metrics
-          title: Top Services
+          title: "Top SKUs"
+          dimensions: [sku__description]
+          measures: [total_net_cost, total_usage]
+          num_rows: 20
+        width: 12
+    height: 400px
+
+  # Environment and cost type
+  - items:
+      - leaderboard:
+          metrics_view: gcp_cost_metrics
+          title: "By environment"
+          dimensions: [environment]
+          measures: [total_net_cost]
+          num_rows: 10
         width: 6
       - leaderboard:
-          dimensions:
-            - project__id
-          measures:
-            - total_cost
-          num_rows: 10
           metrics_view: gcp_cost_metrics
-          title: Top Projects
+          title: "By cost type"
+          dimensions: [cost_type]
+          measures: [total_net_cost]
+          num_rows: 10
         width: 6
     height: 300px
 
-time_ranges: [ P7D, P30D, P3M, P6M, P12M ]
+time_ranges: [P7D, P30D, P3M, P6M, P12M, rill-MTD, rill-PM, rill-YTD]
 filters:
   enable: true
 
