@@ -58,7 +58,7 @@ rows:
       - leaderboard:
           metrics_view: gcp_cost_metrics
           title: "Top projects"
-          dimensions: [project__name]
+          dimensions: [project__name, project__id]
           measures: [total_net_cost]
           num_rows: 15
         width: 6
