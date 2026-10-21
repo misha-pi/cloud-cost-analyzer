@@ -46,23 +46,60 @@ rows:
         width: 12
     height: 360px
 
-  # Services and projects
+  # Services: one row per service, with its name and ID
   - items:
-      - leaderboard:
+      - table:
           metrics_view: gcp_cost_metrics
           title: "Top services"
-          dimensions: [service__description]
-          measures: [total_net_cost]
-          num_rows: 15
-        width: 6
-      - leaderboard:
+          columns: [service__description, service__id, total_net_cost]
+        width: 12
+    height: 400px
+
+  # Projects: one row per project, with its name, ID and number
+  - items:
+      - table:
           metrics_view: gcp_cost_metrics
           title: "Top projects"
-          dimensions: [project__name, project__id]
-          measures: [total_net_cost]
-          num_rows: 15
+          columns: [project__name, project__id, project__number, total_net_cost]
+        width: 12
+    height: 360px
+
+  # The same service and project costs as charts
+  - items:
+      - bar_chart:
+          metrics_view: gcp_cost_metrics
+          title: "Service cost distribution"
+          x:
+            field: service__description
+            type: nominal
+            limit: 10
+          y:
+            field: total_net_cost
+            type: quantitative
+            zeroBasedOrigin: true
         width: 6
-    height: 400px
+      - pie_chart:
+          metrics_view: gcp_cost_metrics
+          title: "Project cost distribution"
+          measure:
+            field: total_net_cost
+            type: quantitative
+          color:
+            field: project__name
+            type: nominal
+            limit: 10
+          innerRadius: 50
+        width: 6
+    height: 320px
+
+  # Regions: one row per region, with its country
+  - items:
+      - table:
+          metrics_view: gcp_cost_metrics
+          title: "By region"
+          columns: [location__location, location__country, total_net_cost]
+        width: 12
+    height: 320px
 
   # SKUs
   - items:
@@ -75,7 +112,7 @@ rows:
         width: 12
     height: 400px
 
-  # Environment, region, cost type
+  # Environment and cost type
   - items:
       - leaderboard:
           metrics_view: gcp_cost_metrics
@@ -83,22 +120,15 @@ rows:
           dimensions: [environment]
           measures: [total_net_cost]
           num_rows: 10
-        width: 4
-      - leaderboard:
-          metrics_view: gcp_cost_metrics
-          title: "By region"
-          dimensions: [location__location, location__country]
-          measures: [total_net_cost]
-          num_rows: 15
-        width: 4
+        width: 6
       - leaderboard:
           metrics_view: gcp_cost_metrics
           title: "By cost type"
           dimensions: [cost_type]
           measures: [total_net_cost]
           num_rows: 10
-        width: 4
-    height: 360px
+        width: 6
+    height: 300px
 
 time_ranges: [P7D, P30D, P3M, P6M, P12M, rill-MTD, rill-PM, rill-YTD]
 filters:
