@@ -1,0 +1,1347 @@
+# MongoDB Atlas spend report for the contract talks: monthly billed cost over the last 12 complete months,
+# per project, and the next-12-month projection. Data: atlas_forecast_monthly and atlas_forecast_estimates.
+# The project charts are the same chart filtered to one rank each; there are 60 of them (production had 51
+# projects), so charts past the last project are empty.
+type: canvas
+display_name: "MongoDB Atlas Spend Report and 12-Month Forecast"
+
+defaults:
+  time_range: inf
+  comparison_mode: none
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            ### MongoDB Atlas spend: past 12 months (actual) and next 12 months (projection)
+            MongoDB Atlas billed cost, from the Atlas line items, for the 12 complete months
+            **{{ metrics_sql "SELECT months_used FROM atlas_forecast_estimate_metrics WHERE line_type = 'total'" }}**
+            (the current month is still being billed and is left out). Each month adds up to its Atlas invoice.
+
+            **How the numbers are worked out**
+            - **Past 12 months (actual)** = billed cost over those 12 months.
+            - **Next 12 months (projection)** = past 12 months x 1.1 (a 10% growth allowance).
+            - The same rule is applied to the total and to each project. Nothing is left out as a one-off spike;
+              taxes are not included. Org-level lines (e.g. Support) have no project and show as **(no project)**.
+            - The **straight-line trend** on each chart is fitted to the monthly cost, to show whether it is rising
+              or falling. It is not used for the projection.
+            - Projects are ranked by their past-12-month cost; one chart per project below the table. Charts past
+              the last project are empty.
+        width: 12
+    height: 330px
+
+  - items:
+      - kpi_grid:
+          metrics_view: atlas_forecast_estimate_metrics
+          title: "Total MongoDB Atlas cost"
+          measures: [avg_monthly_cost, past_12m_actual, next_12m_projection]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "line_type IN ('total')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Total MongoDB Atlas cost per month"
+          description: "Billed cost of all projects, with its straight-line trend"
+          dimension_filters: "rank IN ('0')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 360px
+
+  - items:
+      - pivot:
+          metrics_view: atlas_forecast_estimate_metrics
+          title: "Cost per project"
+          row_dimensions: [ranked_project]
+          measures: [avg_monthly_cost, past_12m_actual, next_12m_projection]
+          dimension_filters: "line_type IN ('project')"
+          hide_local_filters: true
+        width: 12
+    # Tall enough for about 51 projects without scrolling inside the table
+    height: 1250px
+
+  # One chart per project, two per row
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #1: cost per month"
+          dimension_filters: "rank IN ('1')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #2: cost per month"
+          dimension_filters: "rank IN ('2')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #3: cost per month"
+          dimension_filters: "rank IN ('3')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #4: cost per month"
+          dimension_filters: "rank IN ('4')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #5: cost per month"
+          dimension_filters: "rank IN ('5')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #6: cost per month"
+          dimension_filters: "rank IN ('6')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #7: cost per month"
+          dimension_filters: "rank IN ('7')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #8: cost per month"
+          dimension_filters: "rank IN ('8')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #9: cost per month"
+          dimension_filters: "rank IN ('9')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #10: cost per month"
+          dimension_filters: "rank IN ('10')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #11: cost per month"
+          dimension_filters: "rank IN ('11')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #12: cost per month"
+          dimension_filters: "rank IN ('12')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #13: cost per month"
+          dimension_filters: "rank IN ('13')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #14: cost per month"
+          dimension_filters: "rank IN ('14')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #15: cost per month"
+          dimension_filters: "rank IN ('15')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #16: cost per month"
+          dimension_filters: "rank IN ('16')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #17: cost per month"
+          dimension_filters: "rank IN ('17')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #18: cost per month"
+          dimension_filters: "rank IN ('18')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #19: cost per month"
+          dimension_filters: "rank IN ('19')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #20: cost per month"
+          dimension_filters: "rank IN ('20')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #21: cost per month"
+          dimension_filters: "rank IN ('21')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #22: cost per month"
+          dimension_filters: "rank IN ('22')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #23: cost per month"
+          dimension_filters: "rank IN ('23')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #24: cost per month"
+          dimension_filters: "rank IN ('24')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #25: cost per month"
+          dimension_filters: "rank IN ('25')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #26: cost per month"
+          dimension_filters: "rank IN ('26')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #27: cost per month"
+          dimension_filters: "rank IN ('27')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #28: cost per month"
+          dimension_filters: "rank IN ('28')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #29: cost per month"
+          dimension_filters: "rank IN ('29')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #30: cost per month"
+          dimension_filters: "rank IN ('30')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #31: cost per month"
+          dimension_filters: "rank IN ('31')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #32: cost per month"
+          dimension_filters: "rank IN ('32')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #33: cost per month"
+          dimension_filters: "rank IN ('33')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #34: cost per month"
+          dimension_filters: "rank IN ('34')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #35: cost per month"
+          dimension_filters: "rank IN ('35')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #36: cost per month"
+          dimension_filters: "rank IN ('36')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #37: cost per month"
+          dimension_filters: "rank IN ('37')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #38: cost per month"
+          dimension_filters: "rank IN ('38')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #39: cost per month"
+          dimension_filters: "rank IN ('39')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #40: cost per month"
+          dimension_filters: "rank IN ('40')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #41: cost per month"
+          dimension_filters: "rank IN ('41')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #42: cost per month"
+          dimension_filters: "rank IN ('42')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #43: cost per month"
+          dimension_filters: "rank IN ('43')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #44: cost per month"
+          dimension_filters: "rank IN ('44')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #45: cost per month"
+          dimension_filters: "rank IN ('45')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #46: cost per month"
+          dimension_filters: "rank IN ('46')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #47: cost per month"
+          dimension_filters: "rank IN ('47')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #48: cost per month"
+          dimension_filters: "rank IN ('48')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #49: cost per month"
+          dimension_filters: "rank IN ('49')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #50: cost per month"
+          dimension_filters: "rank IN ('50')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #51: cost per month"
+          dimension_filters: "rank IN ('51')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #52: cost per month"
+          dimension_filters: "rank IN ('52')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #53: cost per month"
+          dimension_filters: "rank IN ('53')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #54: cost per month"
+          dimension_filters: "rank IN ('54')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #55: cost per month"
+          dimension_filters: "rank IN ('55')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #56: cost per month"
+          dimension_filters: "rank IN ('56')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #57: cost per month"
+          dimension_filters: "rank IN ('57')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #58: cost per month"
+          dimension_filters: "rank IN ('58')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+  - items:
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #59: cost per month"
+          dimension_filters: "rank IN ('59')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+      - line_chart:
+          metrics_view: atlas_forecast_monthly_metrics
+          title: "Project #60: cost per month"
+          dimension_filters: "rank IN ('60')"
+          hide_local_filters: true
+          x:
+            field: month_label
+            type: nominal
+            sort: x
+          y:
+            field: monthly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 6
+    height: 300px
+
+filters:
+  enable: false
+
+theme: theme
