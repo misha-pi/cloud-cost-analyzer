@@ -60,7 +60,24 @@ To keep loads fast, `make run-gcp` does not read every column of the billing exp
 - `system_labels`, `tags`, and the `project.ancestors` / `project.labels` arrays are not loaded.
 - Rows are downloaded with the BigQuery Storage Read API. The service account needs the
   **BigQuery Read Session User** role for that; without it the load falls back to the slower REST
-  download and says so in its output. The emulator always uses REST.
+  download and says so in its output. The emulator always uses REST. The download uses 2 parallel
+  streams and turns rows into Python in small slices, so memory stays bounded on the 4 GB server.
+- Queries are limited to the export's day partitions they need, so a daily load scans a few days of
+  the table instead of all of it.
+
+### Loading a past date range (GCP)
+
+The BigQuery billing export keeps **only the last 60 days**; older days exist only in the files under
+`viz_rill/data/gcp_costs/`. To fill days that BigQuery still has but that are older than the loaded
+rows, load just that `export_time` range (start included, end excluded):
+
+```bash
+make run-gcp GCP_LOAD_START=2026-08-22 GCP_LOAD_END=2026-09-16
+```
+
+The range is appended and the daily load's saved position is left as it is. The load refuses a range
+that overlaps the rows already loaded (it would duplicate them) and only works with the local files
+(filesystem destination). Stop Rill (`make serve`) during a large range load on the server.
 
 ### Demo data and real data
 
