@@ -1,0 +1,32 @@
+# Monthly MongoDB Atlas cost and its trend for the Atlas Spend Forecast page (model: atlas_forecast_monthly)
+version: 1
+type: metrics_view
+
+display_name: Atlas Spend Forecast - Monthly
+model: atlas_forecast_monthly
+timeseries: month
+smallest_time_grain: "month"
+
+dimensions:
+  - name: month_label
+    display_name: Month
+    expression: "strftime(month, '%Y-%m')"
+    description: "Billing month (UTC)"
+  - name: rank
+    display_name: Rank
+    expression: "CAST(project_rank AS VARCHAR)"
+    description: "0 = all MongoDB Atlas, 1 and up = projects by cost over the 12 months"
+  - name: project
+    display_name: Project
+    column: project
+  - name: series
+    display_name: Line
+    column: series
+    description: "The monthly cost (named after its project) or its straight-line trend"
+
+measures:
+  - name: monthly_cost
+    display_name: "Monthly cost"
+    expression: "SUM(cost)"
+    description: "Atlas billed cost for the month (or the trend line's value)"
+    format_preset: currency_usd
