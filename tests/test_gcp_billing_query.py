@@ -3,14 +3,21 @@ Tests for how the GCP pipeline reads the billing export (no BigQuery needed).
 
 Run: uv run python -m unittest tests/test_gcp_billing_query.py -v
 """
+import datetime as dt
+import json
+import os
 import pathlib
 import sys
+import tempfile
 import types
 import unittest
 from unittest import mock
 
+import dlt
 import pyarrow as pa
-from google.cloud.bigquery import SchemaField
+import pyarrow.parquet as pq
+from dlt.common import pendulum
+from google.cloud.bigquery import SchemaField, TimePartitioning
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "pipelines"))
@@ -77,14 +84,127 @@ class BillingSelectListTest(unittest.TestCase):
         self.assertIn("`cost`", sql)
 
 
+class BillingWhereClauseTest(unittest.TestCase):
+    def test_incremental_scans_days_from_cursor(self):
+        where = gcp.billing_where_clause(TimePartitioning(type_="DAY"), ranged=False)
+        self.assertEqual(where, "export_time > @start AND _PARTITIONTIME >= TIMESTAMP_TRUNC(@start, DAY)")
+
+    def test_range_scans_only_its_days(self):
+        where = gcp.billing_where_clause(TimePartitioning(type_="DAY"), ranged=True)
+        self.assertEqual(where, "export_time >= @start AND export_time < @end"
+                                " AND _PARTITIONTIME >= TIMESTAMP_TRUNC(@start, DAY)"
+                                " AND _PARTITIONTIME <= TIMESTAMP_TRUNC(@end, DAY)")
+
+    def test_no_partition_filter_without_ingestion_partitions(self):
+        # Unpartitioned, or partitioned on a column: _PARTITIONTIME does not exist.
+        self.assertEqual(gcp.billing_where_clause(None, ranged=False), "export_time > @start")
+        column_partitioned = TimePartitioning(type_="DAY", field="usage_start_time")
+        self.assertNotIn("_PARTITIONTIME", gcp.billing_where_clause(column_partitioned, ranged=True))
+
+
+def utc(*args):
+    return dt.datetime(*args, tzinfo=dt.timezone.utc)
+
+
+class LoadRangeTest(unittest.TestCase):
+    def setUp(self):
+        self.data_dir = tempfile.mkdtemp()
+        patcher = mock.patch.dict(os.environ, {"DESTINATION__FILESYSTEM__BUCKET_URL": self.data_dir})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.table_dir = pathlib.Path(self.data_dir) / "gcp_costs" / "bigquery_billing_table"
+        self.table_dir.mkdir(parents=True)
+
+    def write(self, name, times):
+        pq.write_table(pa.table({"export_time": pa.array(times, pa.timestamp("us", tz="UTC"))}), self.table_dir / name)
+
+    def test_loaded_range_over_all_files(self):
+        self.write("a.parquet", [utc(2026, 9, 16, 1), utc(2026, 9, 20)])
+        self.write("b.parquet", [utc(2026, 10, 19, 3)])
+        self.write("empty.parquet", [])
+        self.assertEqual(gcp.loaded_export_time_range("gcp_costs"), (utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)))
+
+    def test_range_before_loaded_rows_is_allowed(self):
+        self.write("a.parquet", [utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)])
+        gcp.check_load_range("gcp_costs", pendulum.datetime(2026, 8, 22), pendulum.datetime(2026, 9, 16))
+
+    def test_overlapping_range_is_refused(self):
+        self.write("a.parquet", [utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)])
+        for start, end in [((2026, 8, 22), (2026, 9, 17)), ((2026, 10, 1), (2026, 10, 2)), ((2026, 10, 19), (2026, 11, 1))]:
+            with self.subTest(start=start, end=end), self.assertRaises(SystemExit):
+                gcp.check_load_range("gcp_costs", pendulum.datetime(*start), pendulum.datetime(*end))
+
+    def test_refused_without_loaded_rows_or_with_empty_range(self):
+        with self.assertRaises(SystemExit):
+            gcp.check_load_range("gcp_costs", pendulum.datetime(2026, 8, 22), pendulum.datetime(2026, 9, 16))
+        self.write("a.parquet", [utc(2026, 9, 16, 1)])
+        with self.assertRaises(SystemExit):
+            gcp.check_load_range("gcp_costs", pendulum.datetime(2026, 9, 1), pendulum.datetime(2026, 9, 1))
+
+
+class FakeRestJob:
+    """A query job read over REST, as the emulator path reads it."""
+
+    job_id = "job"
+
+    def __init__(self, rows):
+        self.rows = rows
+
+    def __iter__(self):
+        return iter(self.rows)
+
+
+class FakeClient:
+    rows, queries = [], []
+
+    def __init__(self, **kwargs):
+        pass
+
+    def get_table(self, name):
+        return types.SimpleNamespace(schema=[SchemaField("cost", "FLOAT"), SchemaField("export_time", "TIMESTAMP")])
+
+    def query(self, query):
+        FakeClient.queries.append(query)
+        return FakeRestJob(FakeClient.rows)
+
+
+class RangeLoadKeepsCursorTest(unittest.TestCase):
+    def run_pipeline(self, workdir, rows, **range_args):
+        FakeClient.rows = rows
+        resource = gcp.bigquery_billing_table(
+            "t", dataset="d", project_id="p", initial_start_date="2026-09-16T00:00:00Z",
+            api_endpoint="http://emulator", **range_args,
+        )
+        pipeline = dlt.pipeline("range_test", destination=dlt.destinations.filesystem(f"file://{workdir}/data"),
+                                dataset_name="gcp_costs", pipelines_dir=f"{workdir}/pipelines")
+        pipeline.run(resource, loader_file_format="parquet")
+        state = pipeline.state["sources"]["range_test"]["resources"]["bigquery_billing_table"]
+        return state["incremental"]["export_time"]["last_value"]
+
+    def test_range_load_appends_and_leaves_cursor(self):
+        workdir = tempfile.mkdtemp()
+        with mock.patch.object(gcp.bigquery, "Client", FakeClient):
+            cursor = self.run_pipeline(workdir, [{"cost": 1.0, "export_time": utc(2026, 10, 19, 3)}])
+            after_range = self.run_pipeline(workdir, [{"cost": 2.0, "export_time": utc(2026, 8, 22, 5)}],
+                                            load_start=pendulum.datetime(2026, 8, 22),
+                                            load_end=pendulum.datetime(2026, 9, 16))
+        self.assertEqual(after_range, cursor)
+        self.assertIn("export_time >= TIMESTAMP '2026-08-22 00:00:00.000000'", FakeClient.queries[-1])
+        self.assertIn("export_time < TIMESTAMP '2026-09-16 00:00:00.000000'", FakeClient.queries[-1])
+        table = pq.ParquetDataset(f"{workdir}/data/gcp_costs/bigquery_billing_table").read(columns=["cost"])
+        self.assertEqual(sorted(table.column("cost").to_pylist()), [1.0, 2.0])
+
+
 class FakeJob:
     def __init__(self, batches=None, error=None):
         self.batches, self.error = batches or [], error
+        self.kwargs = None
 
     def result(self):
         return self
 
-    def to_arrow_iterable(self, bqstorage_client=None):
+    def to_arrow_iterable(self, bqstorage_client=None, **kwargs):
+        self.kwargs = kwargs
         if self.error:
             raise self.error
         return iter(self.batches)
@@ -110,6 +230,14 @@ class StorageReadRowsTest(unittest.TestCase):
             rows = list(rows)
         self.assertEqual([r["cost"] for r in rows], [1.5, 2.0, 3.0])
         self.assertEqual(rows[0]["labels"], [{"key": "app", "value": "a"}])
+
+    def test_limits_streams_and_converts_in_slices(self):
+        batch = pa.record_batch({"cost": [float(i) for i in range(2_500)]})
+        job = FakeJob([batch])
+        with self.patch_storage(), mock.patch("google.cloud.bigquery_storage", fake_storage_module(), create=True):
+            rows = list(gcp._storage_read_rows(job, credentials=None))
+        self.assertEqual(job.kwargs, {"max_stream_count": gcp._STORAGE_READ_STREAMS})
+        self.assertEqual([r["cost"] for r in rows], [float(i) for i in range(2_500)])
 
     def test_falls_back_before_reading_any_row(self):
         with self.patch_storage(), mock.patch("google.cloud.bigquery_storage", fake_storage_module(), create=True):
