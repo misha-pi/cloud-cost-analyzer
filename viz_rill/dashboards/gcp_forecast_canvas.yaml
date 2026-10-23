@@ -1,0 +1,525 @@
+# GCP spend report for the contract talks: weekly net cost over the ~60 days the billing export keeps,
+# the top 20 SKUs, and 12-month estimates. Data: gcp_forecast_weekly and gcp_forecast_estimates.
+# The 20 SKU charts are the same chart filtered to one rank each.
+type: canvas
+display_name: "GCP Spend Report and 12-Month Forecast"
+
+defaults:
+  time_range: inf
+  comparison_mode: none
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            ### GCP spend: past 12 months (estimate) and next 12 months (projection)
+            GCP net cost after credits, for **all GCP projects** on the billing account (MongoDB Atlas bought
+            through the GCP Marketplace is left out; it is on the MongoDB Atlas report). The billing export keeps
+            only about 60 days, so everything here comes from the complete Monday-Sunday weeks
+            **{{ metrics_sql "SELECT weeks_used FROM gcp_forecast_estimate_metrics WHERE line_type = 'total'" }}**.
+
+            **How the numbers are estimated**
+            - **Past 12 months (estimate)** = average weekly net cost x 52. This is not billed spend: it assumes
+              the rest of the year cost what these weeks cost.
+            - **Next 12 months (projection)** = past-12-month estimate x 1.1 (a 10% growth allowance).
+            - The same rule is applied to the total and to each SKU. Credits (e.g. committed-use discounts) are
+              already taken off; nothing is left out as a one-off spike, and taxes are not included.
+            - The **straight-line trend** on each chart is fitted to the weekly cost, to show whether it is
+              rising or falling. It is not used for the estimates.
+        width: 12
+    height: 330px
+
+  - items:
+      - kpi_grid:
+          metrics_view: gcp_forecast_estimate_metrics
+          title: "Total GCP cost"
+          measures: [avg_weekly_cost, past_12m_estimate, next_12m_projection]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "line_type IN ('total')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Total GCP net cost per week"
+          description: "All GCP projects, net of credits, with its straight-line trend"
+          dimension_filters: "rank IN ('0')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 360px
+
+  - items:
+      - pivot:
+          metrics_view: gcp_forecast_estimate_metrics
+          title: "Top 20 SKUs: cost estimates"
+          row_dimensions: [ranked_sku]
+          measures: [avg_weekly_cost, past_12m_estimate, next_12m_projection]
+          dimension_filters: "line_type IN ('sku')"
+          hide_local_filters: true
+        width: 12
+    height: 760px
+
+  # Top 20 SKUs, one per row (full width, so the legend shows the whole SKU name)
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #1: net cost per week"
+          dimension_filters: "rank IN ('1')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #2: net cost per week"
+          dimension_filters: "rank IN ('2')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #3: net cost per week"
+          dimension_filters: "rank IN ('3')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #4: net cost per week"
+          dimension_filters: "rank IN ('4')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #5: net cost per week"
+          dimension_filters: "rank IN ('5')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #6: net cost per week"
+          dimension_filters: "rank IN ('6')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #7: net cost per week"
+          dimension_filters: "rank IN ('7')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #8: net cost per week"
+          dimension_filters: "rank IN ('8')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #9: net cost per week"
+          dimension_filters: "rank IN ('9')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #10: net cost per week"
+          dimension_filters: "rank IN ('10')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #11: net cost per week"
+          dimension_filters: "rank IN ('11')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #12: net cost per week"
+          dimension_filters: "rank IN ('12')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #13: net cost per week"
+          dimension_filters: "rank IN ('13')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #14: net cost per week"
+          dimension_filters: "rank IN ('14')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #15: net cost per week"
+          dimension_filters: "rank IN ('15')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #16: net cost per week"
+          dimension_filters: "rank IN ('16')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #17: net cost per week"
+          dimension_filters: "rank IN ('17')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #18: net cost per week"
+          dimension_filters: "rank IN ('18')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #19: net cost per week"
+          dimension_filters: "rank IN ('19')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+  - items:
+      - line_chart:
+          metrics_view: gcp_forecast_weekly_metrics
+          title: "Top SKU #20: net cost per week"
+          dimension_filters: "rank IN ('20')"
+          hide_local_filters: true
+          x:
+            field: week_start
+            type: nominal
+            sort: x
+          y:
+            field: weekly_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            colorMapping:
+              - value: "Straight-line trend"
+                color: "#9ca3af"
+        width: 12
+    height: 320px
+
+filters:
+  enable: false
+
+theme: theme

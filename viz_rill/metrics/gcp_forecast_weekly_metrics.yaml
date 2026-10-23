@@ -1,0 +1,32 @@
+# Weekly GCP net cost and its trend for the GCP Spend Forecast page (model: gcp_forecast_weekly)
+version: 1
+type: metrics_view
+
+display_name: GCP Spend Forecast - Weekly
+model: gcp_forecast_weekly
+timeseries: week
+smallest_time_grain: "week"
+
+dimensions:
+  - name: week_start
+    display_name: Week
+    expression: "strftime(week, '%Y-%m-%d')"
+    description: "Monday the week starts on (weeks run Monday-Sunday, UTC)"
+  - name: rank
+    display_name: Rank
+    expression: "CAST(sku_rank AS VARCHAR)"
+    description: "0 = all GCP, 1-20 = top SKUs by net cost over the complete weeks"
+  - name: sku
+    display_name: SKU
+    column: sku
+  - name: series
+    display_name: Line
+    column: series
+    description: "The weekly cost (named after its SKU) or its straight-line trend"
+
+measures:
+  - name: weekly_cost
+    display_name: "Weekly net cost"
+    expression: "SUM(cost)"
+    description: "Net cost after credits for the week (or the trend line's value)"
+    format_preset: currency_usd
