@@ -1,0 +1,30 @@
+# Daily cost per provider and line for the Cost Spikes page (model: cost_spike_daily)
+version: 1
+type: metrics_view
+
+display_name: Cost Spikes - Daily
+model: cost_spike_daily
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: provider
+    display_name: Provider
+    column: provider
+  - name: series
+    display_name: Service / cluster
+    column: series
+    description: "Top 5 GCP services or Atlas project / clusters of the last 30 days; the rest is Other"
+
+measures:
+  # Per day, so a week or month grain shows the average day instead of a sum of 7 or 30 days.
+  - name: daily_cost
+    display_name: "Daily cost"
+    expression: "SUM(cost) / NULLIF(COUNT(DISTINCT date), 0)"
+    description: "GCP net cost after credits plus Atlas billed cost, per day"
+    format_preset: currency_usd
+  - name: cost_7d_avg
+    display_name: "7-day average"
+    expression: "SUM(cost_7d_avg) / NULLIF(COUNT(DISTINCT date), 0)"
+    description: "Average daily cost of the 7 days before the day (at a week or month grain: the average of these daily values)"
+    format_preset: currency_usd

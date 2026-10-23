@@ -1,0 +1,154 @@
+# One page to watch for cost spikes across providers (GCP and MongoDB Atlas for now).
+# Models: cost_spike_daily (charts) and cost_spike_movers (tiles and top movers), both built from
+# cloud_provider_costs: a new provider needs only its own block there, plus a tile row and a top 5 chart here.
+type: canvas
+display_name: "Cost Spikes"
+
+defaults:
+  time_range: P90D
+  comparison_mode: none
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            ### Where did cost jump? How to read the numbers
+            Every number ends on **{{ metrics_sql "SELECT as_of_date FROM cost_spike_metrics" }}**, the last day all providers have complete. Newer days are left
+            out because they are still being billed (see *Latest day loaded*).
+
+            | Tile | What it compares |
+            |---|---|
+            | **Latest day** | Cost on {{ metrics_sql "SELECT latest_day_period FROM cost_spike_metrics" }} |
+            | **Latest day vs 7-day avg %** | {{ metrics_sql "SELECT latest_day_period FROM cost_spike_metrics" }} vs the average day of {{ metrics_sql "SELECT avg_7d_period FROM cost_spike_metrics" }}. Catches a one-day jump. |
+            | **Last 7 days vs previous 7 %** | Total of {{ metrics_sql "SELECT last_7d_period FROM cost_spike_metrics" }} vs total of {{ metrics_sql "SELECT prev_7d_period FROM cost_spike_metrics" }}. Catches a rise that lasts several days. |
+            | **Month to date vs last month %** | Average cost per day of {{ metrics_sql "SELECT mtd_period FROM cost_spike_metrics" }} vs {{ metrics_sql "SELECT prev_mtd_period FROM cost_spike_metrics" }}. Per day, because last month can be shorter. |
+
+            Positive % = spending more. GCP is net cost after credits; MongoDB Atlas is the billed cost (bought through
+            the GCP Marketplace, counted once, as Atlas). Atlas lines not billed to a cluster show as
+            *(no project) / (no cluster)*.
+        width: 8
+      - table:
+          metrics_view: cost_spike_metrics
+          title: "Data as of"
+          columns: [provider, as_of_date, latest_loaded_day]
+          description: "Latest day loaded is still partial; if it is days behind today, that provider's load stopped."
+          hide_totals_row: true
+        width: 4
+    height: 300px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "All providers"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+        width: 12
+    height: 130px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "GCP"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "provider IN ('GCP')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "MongoDB Atlas"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "provider IN ('MongoDB Atlas')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+  - items:
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "Total daily cost and its 7-day average"
+          description: "A spike is a day well above its 7-day average (the average day of the 7 days before it)."
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            fields: [daily_cost, cost_7d_avg]
+            type: quantitative
+            zeroBasedOrigin: true
+        width: 6
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "Daily cost by provider"
+          description: "Which provider a jump in the total comes from."
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: provider
+            type: nominal
+        width: 6
+    height: 360px
+  - items:
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "GCP daily cost: top 5 services"
+          description: "Top 5 services by cost in the last 30 days; the rest is in Other."
+          dimension_filters: "provider IN ('GCP')"
+          hide_local_filters: true
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            limit: 6
+        width: 6
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "Atlas daily cost: top 5 project / clusters"
+          description: "Top 5 project / clusters by cost in the last 30 days; the rest is in Other."
+          dimension_filters: "provider IN ('MongoDB Atlas')"
+          hide_local_filters: true
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            limit: 6
+        width: 6
+    height: 360px
+  - items:
+      - table:
+          metrics_view: cost_spike_metrics
+          title: "Top movers: largest increase, last 7 days vs previous 7"
+          description: "Largest $ increase first. Same comparisons as the tiles."
+          columns: [wow_change, provider, service, component, latest_day_cost, prev_7d_avg, latest_vs_avg_pct, last_7d_cost, prev_7d_cost, wow_change_pct]
+          hide_totals_row: true
+        width: 12
+    height: 460px
+
+time_ranges: [P30D, P90D, P6M, P12M]
+filters:
+  enable: true
+
+theme: theme
