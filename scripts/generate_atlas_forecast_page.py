@@ -80,7 +80,7 @@ rows:
             - **Past 12 months (actual)** = billed cost over those 12 months.
             - **Next 12 months (projection)** = past 12 months x 1.1 (a 10% growth allowance).
             - The same rule is applied to the total and to each project. Nothing is left out as a one-off spike.
-              Sales tax is billed on the invoice, not on the line items, and is $0 on our invoices.
+              The Atlas invoices have no sales tax, so there is no tax to include.
               Org-level lines (e.g. Support) have no project and show as **(no project)**.
             - The **straight-line trend** on each chart is fitted to the monthly cost, to show whether it is rising
               or falling. It is not used for the projection.
