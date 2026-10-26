@@ -79,8 +79,9 @@ rows:
             **How the numbers are worked out**
             - **Past 12 months (actual)** = billed cost over those 12 months.
             - **Next 12 months (projection)** = past 12 months x 1.1 (a 10% growth allowance).
-            - The same rule is applied to the total and to each project. Nothing is left out as a one-off spike;
-              taxes are not included. Org-level lines (e.g. Support) have no project and show as **(no project)**.
+            - The same rule is applied to the total and to each project. Nothing is left out as a one-off spike.
+              Sales tax is billed on the invoice, not on the line items, and is $0 on our invoices.
+              Org-level lines (e.g. Support) have no project and show as **(no project)**.
             - The **straight-line trend** on each chart is fitted to the monthly cost, to show whether it is rising
               or falling. It is not used for the projection.
             - Projects are ranked by their past-12-month cost, with one chart per project below the table.

@@ -23,7 +23,8 @@ rows:
               the rest of the year cost what these weeks cost.
             - **Next 12 months (projection)** = past-12-month estimate x 1.1 (a 10% growth allowance).
             - The same rule is applied to the total and to each SKU. Credits (e.g. committed-use discounts) are
-              already taken off; nothing is left out as a one-off spike, and taxes are not included.
+              already taken off, and nothing is left out as a one-off spike. The billing export has no tax rows,
+              so there is no tax to include.
             - The **straight-line trend** on each chart is fitted to the weekly cost, to show whether it is
               rising or falling. It is not used for the estimates.
         width: 12
