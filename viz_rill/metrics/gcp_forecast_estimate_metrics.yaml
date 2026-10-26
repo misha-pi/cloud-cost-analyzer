@@ -38,11 +38,6 @@ measures:
     expression: "SUM(next_12m_projection) * 0.4"
     description: "40% of the projected cost for the next 12 months"
     format_preset: currency_usd
-  - name: nk_suggested_table
-    display_name: "𝐍𝐊 𝐬𝐮𝐠𝐠𝐞𝐬𝐭𝐞𝐝"
-    expression: "SUM(next_12m_projection) * 0.4"
-    description: "NK suggested, as shown in the tables (bold title): 40% of the projected cost for the next 12 months"
-    format_preset: currency_usd
   - name: avg_weekly_cost
     display_name: "Average week"
     expression: "SUM(avg_weekly_cost)"
