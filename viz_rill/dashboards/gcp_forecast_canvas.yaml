@@ -69,7 +69,7 @@ rows:
   - items:
       - pivot:
           metrics_view: gcp_forecast_estimate_metrics
-          title: "Top 20 SKUs: cost estimates"
+          title: "Top 20 SKUs: cost estimates (Total row = these 20 SKUs only)"
           row_dimensions: [ranked_sku]
           measures: [avg_weekly_cost, past_12m_estimate, next_12m_projection]
           dimension_filters: "line_type IN ('sku')"
