@@ -111,7 +111,7 @@ rows:
           metrics_view: atlas_forecast_estimate_metrics
           title: "Cost per project"
           row_dimensions: [ranked_project]
-          measures: [avg_monthly_cost, past_12m_actual, next_12m_projection, nk_suggested]
+          measures: [nk_suggested_table, avg_monthly_cost, past_12m_actual, next_12m_projection]
           dimension_filters: "line_type IN ('project')"
           hide_local_filters: true
         width: 12
