@@ -135,6 +135,12 @@ Real data: put the read-only connection string in `.dlt/secrets.toml` under
 the line items from the first day of `initial_start_date`'s month in `.dlt/config.toml`, so every
 month is complete and adds up to its invoice. Tests: `make test-atlas`.
 
+The **MongoDB Atlas Spend Report and 12-Month Forecast** page has one chart per project. Rill cannot repeat
+a chart once per value, so `scripts/generate_atlas_forecast_page.py` counts the projects in the loaded data
+and writes `viz_rill/dashboards/atlas_forecast_canvas.yaml` with that many charts. The file is gitignored;
+`make run-atlas`, `make atlas-demo-data`, `make demo` and `make serve` rewrite it. To change the page, edit
+the script, then run `uv run python scripts/generate_atlas_forecast_page.py`.
+
 After the **first** Atlas load on a server where `make serve` is already running, restart `make serve`.
 Rill does not retry models that failed earlier because `viz_rill/data/atlas_billing/` did not exist
 yet, so the Atlas pages stay broken until then. Without a restart, this refreshes them:

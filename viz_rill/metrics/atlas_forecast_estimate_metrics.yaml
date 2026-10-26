@@ -1,0 +1,48 @@
+# 12-month MongoDB Atlas cost for the Atlas Spend Forecast page (model: atlas_forecast_estimates)
+version: 1
+type: metrics_view
+
+display_name: Atlas Spend Forecast - Estimates
+model: atlas_forecast_estimates
+
+dimensions:
+  - name: rank
+    display_name: Rank
+    column: rank_text
+  - name: project
+    display_name: Project
+    column: project
+  - name: ranked_project
+    display_name: "Rank and project"
+    expression: "'#' || lpad(rank_text, 2, '0') || ' ' || project"
+  - name: line_type
+    display_name: Line type
+    column: line_type
+  - name: months_used
+    display_name: Months used
+    column: months_used
+
+measures:
+  - name: past_12m_actual
+    display_name: "Actual cost, past 12 months"
+    expression: "SUM(past_12m_actual)"
+    description: "Billed cost over the 12 complete months"
+    format_preset: currency_usd
+  - name: next_12m_projection
+    display_name: "Projected cost, next 12 months"
+    expression: "SUM(next_12m_projection)"
+    description: "Past 12 months x 1.1"
+    format_preset: currency_usd
+  - name: avg_monthly_cost
+    display_name: "Average month"
+    expression: "SUM(avg_monthly_cost)"
+    format_preset: currency_usd
+  - name: monthly_trend
+    display_name: "Trend per month"
+    expression: "SUM(monthly_trend)"
+    description: "Slope of the straight-line trend: how much the monthly cost changes per month"
+    format_preset: currency_usd
+  - name: month_count
+    display_name: "Months"
+    expression: "MAX(month_count)"
+    format_preset: humanize

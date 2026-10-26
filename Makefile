@@ -152,12 +152,14 @@ run-stripe: check-secrets
 
 run-atlas: check-secrets
 	uv run python pipelines/mongodb_atlas_billing_pipeline.py
+	uv run python scripts/generate_atlas_forecast_page.py
 	echo "####################################################################"
 	@[ "$(SKIP_RILL_REFRESH)" = "1" ] || $(MAKE) --no-print-directory rill-refresh
 # Made-up Atlas data in viz_rill/data/atlas_billing (gitignored), no .dlt/secrets.toml needed.
 # `make demo` runs this; run it alone to see the Atlas pages next to your own GCP data.
 atlas-demo-data:
 	PYTHON="uv run python" sh scripts/atlas_demo_data.sh
+	uv run python scripts/generate_atlas_forecast_page.py
 
 #run dlt incremental loads
 # Pipelines we run. Add new sources here (upstream also ran run-aws and run-stripe).
@@ -198,7 +200,9 @@ rill-deploy:
 	--public \
 	--prod-branch main \
 
+# The Atlas forecast page is generated from the data (one chart per project); write it before starting.
 serve:
+	uv run python scripts/generate_atlas_forecast_page.py
 	rill start viz_rill --pull-env=false
 
 serve-duckdb: setup-connector-duckdb
@@ -225,6 +229,7 @@ demo: install-rill setup-connector-duckdb
 	@for d in viz_rill/data/*/; do touch "$${d}_demo_data"; done
 	@echo "✅ Demo data copied successfully"
 	@PYTHON="uv run python" sh scripts/atlas_demo_data.sh
+	@uv run python scripts/generate_atlas_forecast_page.py
 	@echo "✅ Connector set to DuckDB (local parquet files)"
 	@echo ""
 	@echo "Starting Rill dashboards with demo data..."
