@@ -79,6 +79,7 @@ rows:
             **How the numbers are worked out**
             - **Past 12 months (actual)** = billed cost over those 12 months.
             - **Next 12 months (projection)** = past 12 months x 1.1 (a 10% growth allowance).
+            - **NK suggested** = 40% of the next-12-month projection.
             - The same rule is applied to the total and to each project. Nothing is left out as a one-off spike.
               The Atlas invoices have no sales tax, so there is no tax to include.
               Org-level lines (e.g. Support) have no project and show as **(no project)**.
@@ -92,7 +93,7 @@ rows:
       - kpi_grid:
           metrics_view: atlas_forecast_estimate_metrics
           title: "Total MongoDB Atlas cost"
-          measures: [avg_monthly_cost, past_12m_actual, next_12m_projection]
+          measures: [avg_monthly_cost, past_12m_actual, next_12m_projection, nk_suggested]
           sparkline: none
           hide_time_range: true
           comparison: []
@@ -110,7 +111,7 @@ rows:
           metrics_view: atlas_forecast_estimate_metrics
           title: "Cost per project"
           row_dimensions: [ranked_project]
-          measures: [avg_monthly_cost, past_12m_actual, next_12m_projection]
+          measures: [avg_monthly_cost, past_12m_actual, next_12m_projection, nk_suggested]
           dimension_filters: "line_type IN ('project')"
           hide_local_filters: true
         width: 12

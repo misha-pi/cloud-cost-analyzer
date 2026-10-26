@@ -22,6 +22,7 @@ rows:
             - **Past 12 months (estimate)** = average weekly net cost x 52. This is not billed spend: it assumes
               the rest of the year cost what these weeks cost.
             - **Next 12 months (projection)** = past-12-month estimate x 1.1 (a 10% growth allowance).
+            - **NK suggested** = 40% of the next-12-month projection.
             - The same rule is applied to the total and to each SKU. Credits (e.g. committed-use discounts) are
               already taken off, and nothing is left out as a one-off spike. The billing export has no tax rows,
               so there is no tax to include.
@@ -34,7 +35,7 @@ rows:
       - kpi_grid:
           metrics_view: gcp_forecast_estimate_metrics
           title: "Total GCP cost"
-          measures: [avg_weekly_cost, past_12m_estimate, next_12m_projection]
+          measures: [avg_weekly_cost, past_12m_estimate, next_12m_projection, nk_suggested]
           sparkline: none
           hide_time_range: true
           comparison: []
@@ -72,7 +73,7 @@ rows:
           metrics_view: gcp_forecast_estimate_metrics
           title: "Top 20 SKUs: cost estimates (Total row = these 20 SKUs only)"
           row_dimensions: [ranked_sku]
-          measures: [avg_weekly_cost, past_12m_estimate, next_12m_projection]
+          measures: [avg_weekly_cost, past_12m_estimate, next_12m_projection, nk_suggested]
           dimension_filters: "line_type IN ('sku')"
           hide_local_filters: true
         width: 12
