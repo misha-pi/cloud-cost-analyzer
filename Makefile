@@ -279,7 +279,7 @@ gcp-dashboards: gcp-normalize gcp-generate-dashboards
 # 1. load data incrementally
 # 2. normalizes AWS cost reports and generates the AWS Rill dashboards
 # 3. starts Rill BI and opens in browser
-# The GCP pages are written by hand (gcp_overview, gcp_overview_service_app, gcp_atlas_canvas, summary_canvas).
+# The GCP pages are written by hand (gcp_overview, gcp_overview_service_app, gcp_atlas_canvas, summary).
 # gcp-dashboards is left out on purpose: it would bring back the "GCP Labels Analysis" pages removed in PI-18090.
 run-all: install run-etl aws-dashboards serve-duckdb
 
