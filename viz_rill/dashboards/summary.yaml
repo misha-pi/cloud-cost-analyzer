@@ -17,10 +17,8 @@ rows:
               (e.g. "Main App - MS - Production" goes to main app); projects matching no app go to **other**.
             - **MongoDB Pro**: Atlas charges for the whole organisation rather than one project (e.g. a support plan),
               shared across the apps in proportion to their MongoDB cost. We have none so far, so this row is not shown.
-
-            GCP data starts on 18 August 2026, so for earlier months the table only has the MongoDB row.
         width: 12
-    height: 170px
+    height: 150px
   - items:
       - pivot:
           metrics_view: summary_app_cost_metrics
