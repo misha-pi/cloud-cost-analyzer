@@ -15,11 +15,12 @@ rows:
             page, plus MongoDB Atlas. Pick a month in the time filter.
             - **MongoDB**: each Atlas project's billed cost, given to the app whose name is in the project name
               (e.g. "Main App - MS - Production" goes to main app); projects matching no app go to **other**.
-            - **MongoDB Pro**: org-level Atlas lines with no project, spread over the apps by their share of the
-              month's MongoDB cost. It shows only in months that have such lines.
-            The GCP billing export starts in mid-August 2026, so earlier months show MongoDB only.
+            - **MongoDB Pro**: Atlas charges for the whole organisation rather than one project (e.g. a support plan),
+              shared across the apps in proportion to their MongoDB cost. We have none so far, so this row is not shown.
+
+            GCP data starts on 18 August 2026, so for earlier months the table only has the MongoDB row.
         width: 12
-    height: 150px
+    height: 170px
   - items:
       - pivot:
           metrics_view: summary_app_cost_metrics
