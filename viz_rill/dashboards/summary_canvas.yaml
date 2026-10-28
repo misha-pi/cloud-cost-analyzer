@@ -1,0 +1,37 @@
+# Cost summary for the leaders: one month at a time, GCP and MongoDB Atlas together. Starts with the
+# "Each service's cost by app" table of gcp_overview_service_app plus the MongoDB rows; more tables may
+# be moved here later.
+type: canvas
+display_name: "Cost Summary"
+
+defaults:
+  time_range: rill-PM
+
+rows:
+  - items:
+      - markdown:
+          content: |
+            Monthly cost by app: GCP net cost (after credits) per service, the same as the **GCP Cost by Service and App**
+            page, plus MongoDB Atlas. Pick a month in the time filter.
+            - **MongoDB**: each Atlas project's billed cost, given to the app whose name is in the project name
+              (e.g. "Main App - MS - Production" goes to main app); projects matching no app go to **other**.
+            - **MongoDB Pro**: org-level Atlas lines with no project, spread over the apps by their share of the
+              month's MongoDB cost. It shows only in months that have such lines.
+            The GCP billing export starts in mid-August 2026, so earlier months show MongoDB only.
+        width: 12
+    height: 150px
+  - items:
+      - pivot:
+          metrics_view: summary_app_cost_metrics
+          title: "Each service's cost by app (services as rows, apps as columns)"
+          row_dimensions: [service_name]
+          col_dimensions: [app]
+          measures: [total_net_cost]
+        width: 12
+    height: 480px
+
+time_ranges: [rill-PM, rill-MTD, P3M, P6M, P12M]
+filters:
+  enable: true
+
+theme: theme
