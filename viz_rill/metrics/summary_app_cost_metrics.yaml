@@ -1,0 +1,26 @@
+# GCP and MongoDB Atlas cost per app and service (model: summary_app_costs)
+version: 1
+type: metrics_view
+
+display_name: Cost Summary by App
+model: summary_app_costs
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: app
+    display_name: App
+    column: app
+  - name: service_name
+    display_name: Service
+    column: service_name
+  - name: provider
+    display_name: Provider
+    column: provider
+
+measures:
+  - name: total_net_cost
+    display_name: "Net cost"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd
+    valid_percent_of_total: true
