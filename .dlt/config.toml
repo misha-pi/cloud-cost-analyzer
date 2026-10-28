@@ -59,7 +59,7 @@ table_names = [
 # Only these label keys are loaded (the ones the Rill models use); an empty list loads every label,
 # which the optional cur-wizard label dashboards (make gcp-dashboards) need. Each label is a row in the
 # labels child table, so loading all of them makes the load much slower.
-label_keys = ["k8s-namespace", "app"]
+label_keys = ["k8s-namespace", "k8s-workload-name", "app"]
 input_data_dir = "viz_rill/data/gcp_costs"  # Directory where GCP parquet files are loaded
 normalized_data_dir = "viz_rill/data/gcp_costs"  # Directory for normalized GCP data
 

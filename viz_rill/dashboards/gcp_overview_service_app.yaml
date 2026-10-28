@@ -16,9 +16,10 @@ rows:
             in `models/gcp_app_rules.sql`; unmatched cost goes to **other** and Support is spread by cost share.
             MongoDB Atlas, which GCP bills through the Marketplace, is left out here; see the MongoDB Atlas pages.
             The lists below the tables show each row's % of the total. Click a service or project to filter the other list
-            (not the app tables); click an app or service in the last two lists to filter the other one and the app tables.
+            (not the app tables; a project also filters the Kubernetes workload table); click an app or service in the
+            app lists to filter the other one and the app tables.
         width: 12
-    height: 130px
+    height: 150px
   - items:
       - pivot:
           metrics_view: gcp_app_cost_metrics
@@ -73,6 +74,16 @@ rows:
           num_rows: 40
         width: 6
     height: 400px
+
+  # Kubernetes Engine cost by the workload that used it (GKE cost allocation labels), per project
+  - items:
+      - pivot:
+          metrics_view: gcp_workload_cost_metrics
+          title: "Kubernetes cost by workload (expand a project; no label = before cost allocation or cluster fees)"
+          row_dimensions: [project__id, k8s_workload]
+          measures: [total_net_cost]
+        width: 12
+    height: 520px
 
 time_ranges: [rill-PM, rill-MTD, P3M, P6M, P12M]
 filters:

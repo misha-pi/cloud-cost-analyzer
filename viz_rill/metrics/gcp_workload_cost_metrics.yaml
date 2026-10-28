@@ -1,0 +1,28 @@
+# GCP Kubernetes Engine cost per project, namespace and workload (model: gcp_workload_costs)
+version: 1
+type: metrics_view
+
+display_name: GCP Kubernetes Cost by Workload
+model: gcp_workload_costs
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  # Same name as in gcp_cost_metrics, so clicking a project in the page's Projects list filters this table too
+  - name: project__id
+    display_name: Project
+    column: project__id
+  - name: k8s_namespace
+    display_name: Namespace
+    column: k8s_namespace
+  - name: k8s_workload
+    display_name: Workload
+    column: k8s_workload
+    description: "GKE cost allocation's k8s-workload-name label: the Deployment, StatefulSet, ... that used the cost"
+
+measures:
+  - name: total_net_cost
+    display_name: "Net cost"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd
+    valid_percent_of_total: true

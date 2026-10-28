@@ -131,9 +131,9 @@ _ROWS_PER_SLICE = 1_000
 # these made up most of the rows written (e.g. 1.5 months: 47M labels, 17.8M project ancestors).
 _DROPPED_COLUMNS = {"system_labels", "tags"}
 
-# Labels kept when sources.gcp_billing.label_keys is not set: the two the Rill models read
+# Labels kept when sources.gcp_billing.label_keys is not set: the ones the Rill models read
 # (viz_rill/models/gcp_labels_per_row.sql). An empty list keeps every label.
-DEFAULT_LABEL_KEYS = ["k8s-namespace", "app"]
+DEFAULT_LABEL_KEYS = ["k8s-namespace", "k8s-workload-name", "app"]
 
 
 def _sql_string(value: str) -> str:
