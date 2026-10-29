@@ -6,7 +6,8 @@ and credits in child tables) to the day and month files of pipelines/gcp_storage
     uv run python scripts/migrate_gcp_storage.py viz_rill/data/gcp_costs --delete-old
 
 Stop Rill first on a small server. The old files are only deleted with --delete-old, after the totals
-of the old and new files have matched.
+of the old and new files have matched. Run with --delete-old after a migration without it to compare
+again and delete the old files.
 """
 import argparse
 import pathlib
@@ -90,8 +91,10 @@ def main():
     store = gcp_storage.Store(root)
     if not _has_files(root, OLD_TABLE):
         raise SystemExit(f"No old files in {root / OLD_TABLE}: nothing to migrate")
-    if store.export_time_range() is not None:
-        raise SystemExit(f"{root} already has day or month files: migrating again would count rows twice")
+    migrated = store.export_time_range() is not None
+    if migrated and not args.delete_old:
+        raise SystemExit(f"{root} already has day or month files: migrating again would count rows twice. "
+                         "Add --delete-old to compare them with the old files and delete those.")
 
     source = old_rows_sql(root)
     con = store._connect()
@@ -100,7 +103,8 @@ def main():
     finally:
         con.close()
     store.clear_work()
-    added = store.add(source)
+    # Already migrated: only compare, then delete the old files.
+    added = 0 if migrated else store.add(source)
     con = store._connect()
     try:
         files = store._daily_files() + store._monthly_files()
@@ -116,7 +120,9 @@ def main():
         # Sums of the same numbers in another order can differ by a cent.
         return old[:2] == new[:2] and all(abs(a - b) <= 0.05 for a, b in zip(old[2:], new[2:]))
 
-    print(f"Migrated {added:,} billing rows. Per usage month (rows, cost, credits), old -> new:")
+    if not migrated:
+        print(f"Migrated {added:,} billing rows.")
+    print("Per usage month (rows, cost, credits), old -> new:")
     for old, new in zip(before, after):
         print(f"  {old[0]}: {old[1:]} -> {new[1:]}{'' if same(old, new) else '  MISMATCH'}")
     if len(before) != len(after) or not all(same(o, n) for o, n in zip(before, after)):
