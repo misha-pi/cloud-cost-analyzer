@@ -346,7 +346,7 @@ def load_standalone_table_resource() -> None:
     except KeyError:
         initial_start_date = None
 
-    # Label keys to keep (an empty list keeps all labels, e.g. for the cur-wizard label dashboards).
+    # Label keys to keep for ClickHouse and MotherDuck (an empty list keeps all labels).
     label_keys = dlt.config.get("sources.gcp_billing.label_keys")
     if label_keys is None:
         label_keys = DEFAULT_LABEL_KEYS

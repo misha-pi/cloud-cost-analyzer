@@ -269,31 +269,11 @@ aws-generate-dashboards:
 aws-dashboards: aws-normalize aws-generate-dashboards
 	@echo "✅ AWS dashboards generated! Run 'make serve' to view them."
 
-## GCP Advanced Analytics (CUR Wizard integration)
-gcp-normalize:
-	@echo "Normalizing GCP billing data..."
-	cd viz_rill && uv run python cur-wizard/scripts/normalize_gcp.py
-
-gcp-generate-dashboards:
-	@echo "Generating GCP-specific Rill dashboards..."
-	cd viz_rill && uv run python cur-wizard/scripts/generate_gcp_rill_yaml.py \
-		--parquet data/normalized_gcp.parquet \
-		--output-dir . \
-		--cost-col cost \
-		--dim-prefixes "labels_,service__,project__" \
-		--timeseries-col date
-
-# Optional, run by hand: creates the "GCP Labels Analysis" pages (one list per label, service and project field).
-# make run-all does not run it (see the note above run-all). It does not change gcp_overview.yaml.
-gcp-dashboards: gcp-normalize gcp-generate-dashboards
-	@echo "✅ GCP dashboards generated! Run 'make serve' to view them."
-
 #what this does:
 # 1. load data incrementally
 # 2. normalizes AWS cost reports and generates the AWS Rill dashboards
 # 3. starts Rill BI and opens in browser
 # The GCP pages are written by hand (gcp_overview, gcp_overview_service_app, gcp_atlas_canvas, summary).
-# gcp-dashboards is left out on purpose: it would bring back the "GCP Labels Analysis" pages removed in PI-18090.
 run-all: install run-etl aws-dashboards serve-duckdb
 
 
@@ -366,7 +346,7 @@ anonymize-clickhouse:
 	@echo ""
 
 # Complete cloud pipeline with anonymization
-# Note: Dynamic dashboard generation (aws-dashboards/gcp-dashboards) requires local parquet files,
+# Note: Dynamic dashboard generation (aws-dashboards) requires local parquet files,
 # so it's excluded from cloud mode. Static dashboards work with ClickHouse via models.
 run-all-cloud: check-secrets run-etl-clickhouse anonymize-clickhouse serve-clickhouse
 	@echo ""

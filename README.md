@@ -719,9 +719,6 @@ But it provides useful dashboards (alredy pre commited in this repo), but if you
 # Local mode only - Generate AWS canvases (optional)
 make aws-dashboards  # Normalizes + generates canvases/explores/
 
-# Local mode only - Generate GCP canvases (optional)
-make gcp-dashboards  # Normalizes + generates canvases/explores/
-
 # View all dashboards (static + generated)
 make serve
 ```
@@ -731,7 +728,6 @@ make serve
 - `viz_rill/canvases/*.yaml` - Dimension-specific breakdowns
 - `viz_rill/explores/*.yaml` - Auto-generated explorers
 - `viz_rill/data/normalized_aws.parquet` - Flattened AWS data
-- `viz_rill/data/normalized_gcp.parquet` - Flattened GCP data
 
 
 
