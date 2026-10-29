@@ -1,6 +1,7 @@
-# Cost summary for the leaders: one month at a time, GCP and MongoDB Atlas together. Starts with the
-# "Each service's cost by app" table of gcp_overview_service_app plus the MongoDB rows; more tables may
-# be moved here later.
+# Cost summary for the leaders: one month at a time, GCP and MongoDB Atlas together. Has the
+# "Each service's cost by app" table of gcp_overview_service_app plus the MongoDB rows, the "Cost over time
+# by provider" chart of gcp_atlas_canvas and the "Kubernetes cost by workload" table of
+# gcp_overview_service_app.
 type: canvas
 display_name: "Cost Summary"
 
@@ -28,6 +29,31 @@ rows:
           measures: [total_net_cost]
         width: 12
     height: 480px
+  - items:
+      - stacked_bar:
+          metrics_view: cloud_provider_cost_metrics
+          title: "Cost over time by provider"
+          x:
+            field: date
+            type: temporal
+          y:
+            field: total_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: provider
+            type: nominal
+        width: 12
+    height: 360px
+  # One GKE cluster per project, so a project's total is its cluster's cost.
+  - items:
+      - pivot:
+          metrics_view: gcp_workload_cost_metrics
+          title: "Kubernetes cost by workload (expand a project; no label = before cost allocation or cluster fees)"
+          row_dimensions: [project__id, k8s_workload]
+          measures: [total_net_cost]
+        width: 12
+    height: 520px
 
 time_ranges: [rill-PM, rill-MTD, P3M, P6M, P12M]
 filters:
