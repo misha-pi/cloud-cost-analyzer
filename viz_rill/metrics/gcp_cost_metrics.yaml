@@ -80,5 +80,6 @@ measures:
 
   - name: record_count
     display_name: "Record Count"
-    expression: "COUNT(*)"
+    description: "Billing export rows (the stored rows are daily or monthly sums of them)"
+    expression: "SUM(row_count)"
     format_preset: humanize

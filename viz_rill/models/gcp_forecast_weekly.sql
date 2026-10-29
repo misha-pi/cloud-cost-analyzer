@@ -4,16 +4,17 @@
 --
 -- Only complete Monday-Sunday weeks are used. A usage day is complete from the first export day (rows
 -- for earlier usage days only partly arrived before the export history starts) to the day before the
--- latest export day (that day is still being filled in). The billing export keeps about 60 days, so this
--- is about 8 weeks.
+-- latest export day (that day is still being filled in). Only day rows are used: they cover the latest
+-- 3 months, older months are stored per month.
 --
 -- The top 20 SKUs are ranked by net cost over those weeks. A SKU is identified by its SKU id and named
 -- "service / SKU description". gcp_costs already leaves out MongoDB Atlas billed through the Marketplace.
 WITH bounds AS (
   SELECT
-    GREATEST(MIN(date), CAST(MIN(export_time) AS DATE)) AS first_day,
+    GREATEST(MIN(date), CAST(MIN(first_export_time) AS DATE)) AS first_day,
     LEAST(MAX(date), CAST(MAX(export_time) AS DATE) - 1) AS last_day
   FROM {{ ref "gcp_costs" }}
+  WHERE grain = 'day'
 ),
 
 weeks AS (
@@ -34,6 +35,7 @@ sku_weeks AS (
     SUM(c.net_cost) AS net_cost
   FROM {{ ref "gcp_costs" }} c
   JOIN weeks w ON CAST(date_trunc('week', c.date) AS DATE) = w.week
+  WHERE c.grain = 'day'
   GROUP BY ALL
 ),
 

@@ -179,6 +179,19 @@ rill-refresh:
 		&& echo "Rill at $(RILL_URL) is rebuilding its models; the dashboards update in a few minutes." \
 		|| echo "Rill is not running at $(RILL_URL); it will read the new data when it starts (make serve)."
 
+# Daily load on the server: adds scripts/daily_load.sh to root's crontab (02:00 UTC), replacing an older
+# line for it. Its output is in logs/daily_load.log.
+CRON_TIME ?= 0 2 * * *
+install-cron:
+	@( crontab -l 2>/dev/null | grep -v 'scripts/daily_load.sh' ; \
+	   echo "$(CRON_TIME) $(CURDIR)/scripts/daily_load.sh" ) | crontab -
+	@crontab -l | grep daily_load
+
+# One-off: move GCP data loaded before the day/month files (one file per load, labels and credits in
+# child tables) into them. Stop Rill first on the server. Old files are kept unless DELETE_OLD=1.
+migrate-gcp-storage:
+	uv run python scripts/migrate_gcp_storage.py viz_rill/data/gcp_costs $(if $(filter 1,$(DELETE_OLD)),--delete-old)
+
 test-atlas:
 	uv run python -m unittest discover -s tests -p "test_atlas*.py" -v
 

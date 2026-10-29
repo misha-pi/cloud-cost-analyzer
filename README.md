@@ -49,26 +49,54 @@ make run-gcp-emulator
 make serve
 ```
 
-his writes parquet under `viz_rill/data/gcp_costs/` and opens Rill at [http://localhost:9009](http://localhost:9009). If a previous GCP load left pipeline state, run `make dlt-clear` first so rows are not skipped.
+This writes parquet under `viz_rill/data/gcp_costs/` and opens Rill at [http://localhost:9009](http://localhost:9009).
 
 ### What the GCP load reads
 
 To keep loads fast, `make run-gcp` does not read every column of the billing export:
 
-- Only the labels in `label_keys` (`.dlt/config.toml`, default `k8s-namespace`, `k8s-workload-name` and
-  `app`, the ones the Rill models use) are loaded. Set `label_keys = []` to load every label, e.g. for
-  `make gcp-dashboards`.
-- `system_labels`, `tags`, and the `project.ancestors` / `project.labels` arrays are not loaded.
+- Only the columns the dashboards use are read, flattened by the query: the `k8s-namespace`,
+  `k8s-workload-name` and `app` labels become columns and a row's credits are summed into
+  `credits_total` (`FIELDS` and `LABEL_COLUMNS` in `pipelines/gcp_storage.py`).
+- `system_labels`, `tags`, the other labels and the `project.ancestors` / `project.labels` arrays are not
+  loaded. (`label_keys` in `.dlt/config.toml` only applies to the ClickHouse and MotherDuck destinations.)
 - Rows are downloaded with the BigQuery Storage Read API. The service account needs the
   **BigQuery Read Session User** role for that; without it the load falls back to the slower REST
   download and says so in its output. The emulator always uses REST. The download uses 2 parallel
-  streams and turns rows into Python in small slices, so memory stays bounded on the 4 GB server.
+  streams and is written to parquet as Arrow, without turning rows into Python objects.
 - Queries are limited to the export's day partitions they need, so a daily load scans a few days of
   the table instead of all of it.
 
+### How the GCP data is stored
+
+`make run-gcp` sums the new billing rows and writes them under `viz_rill/data/gcp_costs/`:
+
+| Folder | What | Kept |
+|---|---|---|
+| `hourly/last_24h.parquet` | every billing row, one by one | rows exported in the last 24 hours |
+| `daily/YYYY-MM/data.parquet` | cost per usage day, project, service, SKU, resource, labels, ... | the latest 3 months |
+| `monthly/YYYY-MM.parquet` | the same, per usage month | older months |
+
+Each load merges its rows into their month's day file. Months that fall out of the latest 3 are rolled
+up into a month file (late rows for such a month are added to it), so a month's total never changes.
+The dashboards read the day and month files (`models/gcp_billing_raw.sql`): over a long date range,
+months older than 3 months show as one value on the 1st of the month. The hourly file is not used by
+the dashboards; it is there for a cost-watching agent. The next load starts after the latest
+`export_time` in the files, so there is no separate cursor to keep in sync.
+
+GCP data loaded before this layout (one file per load in `bigquery_billing_table/`, labels and credits
+in child tables) is moved with `make migrate-gcp-storage` (stop Rill first on the server; it checks the
+monthly totals and keeps the old files unless `DELETE_OLD=1`).
+
+### Daily load
+
+On the server, `make install-cron` adds `scripts/daily_load.sh` to root's crontab (02:00 UTC; set
+`CRON_TIME` to change it). It runs `make run-etl` (GCP, then Atlas, then a Rill refresh) with Rill left
+running, and writes to `logs/daily_load.log`.
+
 ### Loading a past date range (GCP)
 
-The BigQuery billing export keeps **only the last 60 days**; older days exist only in the files under
+The BigQuery billing export keeps a limited number of days (60 by default); older days exist only in the files under
 `viz_rill/data/gcp_costs/`. To fill days that BigQuery still has but that are older than the loaded
 rows, load just that `export_time` range (start included, end excluded):
 
@@ -76,8 +104,8 @@ rows, load just that `export_time` range (start included, end excluded):
 make run-gcp GCP_LOAD_START=2026-08-22 GCP_LOAD_END=2026-09-16
 ```
 
-The range is appended and the daily load's saved position is left as it is. The load refuses a range
-that overlaps the rows already loaded (it would duplicate them) and only works with the local files
+The range is added to the day and month files. The load refuses a range
+that overlaps the rows already loaded (it would count them twice) and only works with the local files
 (filesystem destination). Stop Rill (`make serve`) during a large range load on the server.
 
 ### Demo data and real data
@@ -88,15 +116,13 @@ file. It refuses to overwrite a folder without that file, i.e. data loaded by a 
 `FORCE=1 make demo` overrides that. `make atlas-demo-data` does the same check for `atlas_billing/`.
 
 The real pipelines delete demo-marked data before loading, so real rows are never mixed with demo
-rows. If the GCP files are missing, the next `make run-gcp` reloads from `initial_start_date` instead
-of loading only rows newer than its saved cursor.
+rows. If the GCP files are missing, the next `make run-gcp` loads from `initial_start_date`.
 
 ### Dashboard speed and memory
 
 The GCP data is large (millions of hourly rows), so the GCP models that the dashboards query are
 **materialized**: Rill stores them once as DuckDB tables instead of re-reading the parquet files on every
-query (`gcp_costs`, `gcp_labels_per_row`, `gcp_app_costs` and `cloud_provider_costs`; the last two hold
-daily totals). Because the tables are stored, Rill has to rebuild them after new data is loaded:
+query (`gcp_costs`, `gcp_app_costs` and `cloud_provider_costs`; the last two hold daily totals). Because the tables are stored, Rill has to rebuild them after new data is loaded:
 `make run-gcp`, `make run-atlas` and `make run-etl` call `make rill-refresh` at the end, which asks the
 running Rill (`RILL_URL`, default `http://localhost:9009`) to rebuild its models. When Rill is not
 running, it reads the new data when it starts.

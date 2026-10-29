@@ -22,6 +22,7 @@ from google.cloud.bigquery import SchemaField, TimePartitioning
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "pipelines"))
 
+import gcp_storage  # noqa: E402
 import google_bq_incremental_pipeline as gcp  # noqa: E402
 
 KV = [SchemaField("key", "STRING"), SchemaField("value", "STRING")]
@@ -108,38 +109,36 @@ def utc(*args):
 
 class LoadRangeTest(unittest.TestCase):
     def setUp(self):
-        self.data_dir = tempfile.mkdtemp()
-        patcher = mock.patch.dict(os.environ, {"DESTINATION__FILESYSTEM__BUCKET_URL": self.data_dir})
-        patcher.start()
-        self.addCleanup(patcher.stop)
-        self.table_dir = pathlib.Path(self.data_dir) / "gcp_costs" / "bigquery_billing_table"
-        self.table_dir.mkdir(parents=True)
+        self.store = gcp_storage.Store(pathlib.Path(tempfile.mkdtemp()) / "gcp_costs")
 
-    def write(self, name, times):
-        pq.write_table(pa.table({"export_time": pa.array(times, pa.timestamp("us", tz="UTC"))}), self.table_dir / name)
+    def write(self, month, times):
+        """A day file whose rows were exported at `times` (only the export_time columns matter here)."""
+        path = self.store.root / "daily" / month / "data.parquet"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        times = pa.array(times, pa.timestamp("us", tz="UTC"))
+        pq.write_table(pa.table({"first_export_time": times, "export_time": times}), path)
 
     def test_loaded_range_over_all_files(self):
-        self.write("a.parquet", [utc(2026, 9, 16, 1), utc(2026, 9, 20)])
-        self.write("b.parquet", [utc(2026, 10, 19, 3)])
-        self.write("empty.parquet", [])
-        self.assertEqual(gcp.loaded_export_time_range("gcp_costs"), (utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)))
+        self.write("2026-09", [utc(2026, 9, 16, 1), utc(2026, 9, 20)])
+        self.write("2026-10", [utc(2026, 10, 19, 3)])
+        self.assertEqual(self.store.export_time_range(), (utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)))
 
     def test_range_before_loaded_rows_is_allowed(self):
-        self.write("a.parquet", [utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)])
-        gcp.check_load_range("gcp_costs", pendulum.datetime(2026, 8, 22), pendulum.datetime(2026, 9, 16))
+        self.write("2026-09", [utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)])
+        gcp.check_load_range(self.store, pendulum.datetime(2026, 8, 22), pendulum.datetime(2026, 9, 16))
 
     def test_overlapping_range_is_refused(self):
-        self.write("a.parquet", [utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)])
+        self.write("2026-09", [utc(2026, 9, 16, 1), utc(2026, 10, 19, 3)])
         for start, end in [((2026, 8, 22), (2026, 9, 17)), ((2026, 10, 1), (2026, 10, 2)), ((2026, 10, 19), (2026, 11, 1))]:
             with self.subTest(start=start, end=end), self.assertRaises(SystemExit):
-                gcp.check_load_range("gcp_costs", pendulum.datetime(*start), pendulum.datetime(*end))
+                gcp.check_load_range(self.store, pendulum.datetime(*start), pendulum.datetime(*end))
 
     def test_refused_without_loaded_rows_or_with_empty_range(self):
         with self.assertRaises(SystemExit):
-            gcp.check_load_range("gcp_costs", pendulum.datetime(2026, 8, 22), pendulum.datetime(2026, 9, 16))
-        self.write("a.parquet", [utc(2026, 9, 16, 1)])
+            gcp.check_load_range(self.store, pendulum.datetime(2026, 8, 22), pendulum.datetime(2026, 9, 16))
+        self.write("2026-09", [utc(2026, 9, 16, 1)])
         with self.assertRaises(SystemExit):
-            gcp.check_load_range("gcp_costs", pendulum.datetime(2026, 9, 1), pendulum.datetime(2026, 9, 1))
+            gcp.check_load_range(self.store, pendulum.datetime(2026, 9, 1), pendulum.datetime(2026, 9, 1))
 
 
 class FakeRestJob:
@@ -247,6 +246,38 @@ class StorageReadRowsTest(unittest.TestCase):
     def test_falls_back_when_package_missing(self):
         with mock.patch.dict(sys.modules, {"google.cloud.bigquery_storage": None}):
             self.assertIsNone(gcp._storage_read_rows(FakeJob(), credentials=None))
+
+
+class StorageOnlyJob(FakeJob):
+    """Fails like a missing read-session role when read with the Storage Read API, works over REST."""
+
+    def to_arrow_iterable(self, bqstorage_client=None, **kwargs):
+        if bqstorage_client is not None:
+            raise PermissionError("readsessions.create")
+        return iter(self.batches)
+
+
+class LoadTableToStoreTest(unittest.TestCase):
+    def load(self, job, credentials):
+        store = gcp_storage.Store(pathlib.Path(tempfile.mkdtemp()) / "gcp_costs")
+        with mock.patch.object(gcp, "_start_query", return_value=(job, credentials)), \
+                mock.patch.dict(sys.modules, {"google.cloud.bigquery_storage": fake_storage_module()}):
+            count = gcp.load_table_to_store(store, "t", "d", "p", None, utc(2026, 10, 1))
+        staged = pq.read_table(store.new_staging_file("t"))
+        return count, staged, job
+
+    def test_arrow_batches_go_to_a_staging_file(self):
+        batches = [pa.record_batch({"cost": [1.0, 2.0], "export_time": pa.array([utc(2026, 10, 2)] * 2)}),
+                   pa.record_batch({"cost": [3.0], "export_time": pa.array([utc(2026, 10, 3)])})]
+        count, staged, job = self.load(FakeJob(batches), credentials=object())
+        self.assertEqual(count, 3)
+        self.assertEqual(staged.column("cost").to_pylist(), [1.0, 2.0, 3.0])
+        self.assertEqual(job.kwargs, {"max_stream_count": gcp._STORAGE_READ_STREAMS})
+
+    def test_falls_back_to_rest_without_read_session_role(self):
+        batches = [pa.record_batch({"cost": [1.0], "export_time": pa.array([utc(2026, 10, 2)])})]
+        count, staged, _ = self.load(StorageOnlyJob(batches), credentials=object())
+        self.assertEqual((count, staged.column("cost").to_pylist()), (1, [1.0]))
 
 
 if __name__ == "__main__":
