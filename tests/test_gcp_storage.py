@@ -4,10 +4,12 @@ Tests for the GCP day/month files (pipelines/gcp_storage.py). No BigQuery needed
 Run: uv run python -m unittest tests/test_gcp_storage.py -v
 """
 import datetime as dt
+import os
 import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 import duckdb
 import pyarrow as pa
@@ -112,6 +114,13 @@ class StoreTest(unittest.TestCase):
         self.add([row(utc(2026, 10, 2, 1), utc(2026, 10, 2, 1), 2.0), row(utc(2026, 10, 2, 2), utc(2026, 10, 2, 3), 4.0)])
         hourly = self.store._hourly_file()
         self.assertEqual(self.query("SELECT cost, net_cost FROM ROWS ORDER BY cost", [hourly]), [(2.0, 2.0), (4.0, 4.0)])
+
+    def test_spills_to_disk_under_a_small_memory_limit(self):
+        rows = [row(utc(2026, 10, 1, h % 24), utc(2026, 10, 2), 1.0, resource__name=f"r{h}") for h in range(300_000)]
+        with mock.patch.dict(os.environ, {"GCP_STORAGE_MEMORY_LIMIT": "64MB"}):
+            self.assertEqual(self.add(rows), 300_000)
+        self.assertEqual(self.stored("SELECT SUM(cost), SUM(row_count) FROM ROWS"), [(300_000.0, 300_000)])
+        self.assertFalse(self.store.spill_dir.exists())
 
     def test_nothing_staged_changes_nothing(self):
         self.assertEqual(self.store.add(), 0)
