@@ -15,32 +15,28 @@ Multi-cloud cost analytics platform combining AWS Cost and Usage Reports (CUR), 
 
 ![](img/tech-stack.png)
 
-## How to use BigQuery simulator
+## How to use the BigQuery emulator
 
-Run the following commands to install and setup BigQuery simulator on your local machine:
+The emulator runs BigQuery locally with fake billing data, to test the GCP pipeline and dashboards without
+a real billing account. Start it (keep this terminal open):
+
+```bash
+docker run --rm -p 9050:9050 -p 9060:9060 ghcr.io/goccy/bigquery-emulator:latest --project=billing-dev
+```
+
+In a second terminal, create the billing table and fill it with 30 days of fake rows (about 2 minutes),
+then print a few totals to check them:
 
 ```bash
 cd bigquery-emulator
-
-docker pull ghcr.io/goccy/bigquery-emulator:latest
-
-docker run -it -p 9050:9050 -p 9060:9060 \
-  -v "$(pwd)/seed:/seed" \
-  ghcr.io/goccy/bigquery-emulator:latest \
-  --project=billing-dev --data-from-yaml=/seed/billing.yaml \
-  --database=/seed/emulator.db
-
 pip3 install -r requirements.txt
-
 python3 generate_billing_seed.py --emulator http://localhost:9050 --days 30
-
-python3 verify_data.py 
-
+python3 verify_data.py
 ```
 
+The emulator keeps the data in memory: after a restart, run `generate_billing_seed.py` again.
 
-
-### Load sumulator data into dashboards
+### Load the emulator data into the dashboards
 
 From the repository root, with the emulator still running:
 
