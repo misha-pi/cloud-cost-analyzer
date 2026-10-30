@@ -97,7 +97,6 @@ make serve-clickhouse     # Force ClickHouse mode
 ### Optional: Dynamic Dashboard Generation (local mode only)
 ```bash
 make aws-dashboards       # Normalize + generate AWS canvases
-make gcp-dashboards       # Normalize + generate GCP canvases
 ```
 Note: Dynamic generation only works with local Parquet files, not ClickHouse.
 

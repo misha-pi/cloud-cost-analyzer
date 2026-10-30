@@ -56,9 +56,9 @@ initial_start_date = "2025-09-01T00:00:00Z"  # Only load data from this date onw
 table_names = [
     "gcp_billing_export_resource_v1_<BILLING_ACCOUNT_ID>"
 ]
-# Only these label keys are loaded (the ones the Rill models use); an empty list loads every label,
-# which the optional cur-wizard label dashboards (make gcp-dashboards) need. Each label is a row in the
-# labels child table, so loading all of them makes the load much slower.
+# ClickHouse and MotherDuck destinations only: these label keys are loaded; an empty list loads every
+# label. Each label is a row in the labels child table, so loading all of them makes the load much slower.
+# The local files for Rill always keep the labels the models use (pipelines/gcp_storage.py).
 label_keys = ["k8s-namespace", "k8s-workload-name", "app"]
 input_data_dir = "viz_rill/data/gcp_costs"  # Directory where GCP parquet files are loaded
 normalized_data_dir = "viz_rill/data/gcp_costs"  # Directory for normalized GCP data

@@ -23,3 +23,6 @@ bigquery-emulator/seed/emulator.db
 
 # Generated from the Atlas data by scripts/generate_atlas_forecast_page.py (one chart per project)
 viz_rill/dashboards/atlas_forecast_canvas.yaml
+
+# Daily load log (scripts/daily_load.sh)
+logs/

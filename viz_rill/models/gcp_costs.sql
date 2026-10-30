@@ -43,23 +43,18 @@ WHERE cost IS NOT NULL
 
 {{ else }}
 -- DuckDB: Read from parquet files (default for local development)
--- Billing rows come from gcp_billing_raw and per-row credit sums from gcp_credits_per_row.
--- Each file read lives in its own simple model: Rill only resolves the relative
--- data/ paths for single-source queries, not inside CTEs or joins. `ref` makes Rill
--- build those two models first (it cannot infer dependencies from templated SQL).
+-- gcp_billing_raw has a row per day (recent months) or month (older months), with labels and credits
+-- already as columns. It lives in its own simple model: Rill only resolves the relative data/ paths for
+-- single-source queries. `ref` makes Rill build it first (it cannot infer dependencies from templated SQL).
 SELECT
-  CAST(b.usage_start_time AS DATE) AS date,
   b.service__description AS service_name,
   b.sku__description AS sku_description,
   b.location__location AS region,
   b.location__country AS country,
   b.project__id AS project_id,
   b.project__name AS project_name,
-  COALESCE(c.credits_total, 0) AS credits_total,
-  b.cost + COALESCE(c.credits_total, 0) AS net_cost,
   b.*
 FROM {{ ref "gcp_billing_raw" }} b
-LEFT JOIN {{ ref "gcp_credits_per_row" }} c ON c._dlt_parent_id = b._dlt_id
 WHERE b.cost IS NOT NULL
   AND COALESCE(b.service__description, '') NOT LIKE 'MongoDB Atlas%'
 

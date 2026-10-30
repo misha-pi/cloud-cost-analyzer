@@ -18,9 +18,8 @@ WITH billing_rows AS (
     c.project_id,
     c.service_name,
     c.net_cost,
-    LOWER(COALESCE(l.k8s_namespace, l.app_label, c.resource__name, '')) AS app_key
+    LOWER(COALESCE(c.k8s_namespace, c.app_label, c.resource__name, '')) AS app_key
   FROM {{ ref "gcp_costs" }} c
-  LEFT JOIN {{ ref "gcp_labels_per_row" }} l ON l._dlt_parent_id = c._dlt_id
 ),
 
 match_keys AS (
