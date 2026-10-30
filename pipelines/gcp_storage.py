@@ -128,18 +128,24 @@ class Store:
         self.root = pathlib.Path(root)
         # Next to the data folder, so Rill never reads half-written files.
         self.work_dir = self.root.parent / f".{self.root.name}_work"
+        # DuckDB's database file and spill files while adding rows, so a large add (e.g. the one-off
+        # migration of millions of rows) stays within the memory limit.
+        self.spill_dir = self.root.parent / f".{self.root.name}_spill"
 
     def clear_work(self) -> None:
         """Remove what an interrupted load left in the work folder (its rows were never added)."""
         shutil.rmtree(self.work_dir, ignore_errors=True)
+        shutil.rmtree(self.spill_dir, ignore_errors=True)
 
-    def _connect(self):
-        con = duckdb.connect()
+    def _connect(self, on_disk=False):
+        """A DuckDB connection; with on_disk, its tables live in a file under spill_dir instead of memory."""
+        self.spill_dir.mkdir(parents=True, exist_ok=True)  # DuckDB does not create missing parent folders
+        con = duckdb.connect(str(self.spill_dir / "work.duckdb") if on_disk else ":memory:")
         # The server has 4 GB: let DuckDB spill to disk rather than use more.
         con.execute(f"SET memory_limit = {_sql_string(os.getenv('GCP_STORAGE_MEMORY_LIMIT', '1GB'))}")
         con.execute("SET threads = 2")
         con.execute("SET preserve_insertion_order = false")
-        con.execute(f"SET temp_directory = {_sql_string(str(self.work_dir / 'spill'))}")
+        con.execute(f"SET temp_directory = {_sql_string(str(self.spill_dir / 'tmp'))}")
         con.execute("SET TimeZone = 'UTC'")  # usage days are UTC days, as in the billing export
         return con
 
@@ -183,9 +189,9 @@ class Store:
             if not staged:
                 return 0
             source_sql = _read(staged)
-        con = self._connect()
+        con = self._connect(on_disk=True)
         try:
-            con.execute(f"CREATE TEMP TABLE new_rows AS SELECT *, cost + credits_total AS net_cost FROM ({source_sql})")
+            con.execute(f"CREATE TABLE new_rows AS SELECT *, cost + credits_total AS net_cost FROM ({source_sql})")
             added = con.execute("SELECT COUNT(*) FROM new_rows").fetchone()[0]
             if added:
                 self._add_daily(con)
@@ -205,7 +211,7 @@ class Store:
 
     def _add_daily(self, con) -> None:
         raw = "SELECT *, export_time AS first_export_time, 1 AS row_count FROM new_rows"
-        con.execute(f"CREATE TEMP TABLE new_daily AS {_rollup_sql(raw, 'usage_start_time', 'day')}")
+        con.execute(f"CREATE TABLE new_daily AS {_rollup_sql(raw, 'usage_start_time', 'day')}")
         months = [m for (m,) in con.execute(
             "SELECT DISTINCT strftime(date, '%Y-%m') FROM new_daily ORDER BY 1"
         ).fetchall()]
