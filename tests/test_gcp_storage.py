@@ -73,10 +73,11 @@ class StoreTest(unittest.TestCase):
         self.assertEqual([p.relative_to(self.root).as_posix() for p in self.store._daily_files()],
                          ["daily/2026-10/data.parquet"])
         self.assertEqual(
-            self.stored("SELECT grain, date, k8s_workload, cost, credits_total, row_count FROM ROWS ORDER BY date, k8s_workload"),
-            [("day", dt.date(2026, 10, 1), "api", 3.0, -0.5, 2),
-             ("day", dt.date(2026, 10, 1), "web", 4.0, 0.0, 1),
-             ("day", dt.date(2026, 10, 2), "api", 8.0, 0.0, 1)],
+            self.stored("SELECT grain, date, k8s_workload, cost, credits_total, net_cost, row_count FROM ROWS "
+                        "ORDER BY date, k8s_workload"),
+            [("day", dt.date(2026, 10, 1), "api", 3.0, -0.5, 2.5, 2),
+             ("day", dt.date(2026, 10, 1), "web", 4.0, 0.0, 4.0, 1),
+             ("day", dt.date(2026, 10, 2), "api", 8.0, 0.0, 8.0, 1)],
         )
         self.assertEqual(self.store.export_time_range(), (utc(2026, 10, 1, 5), utc(2026, 10, 2, 3)))
         self.assertFalse(self.store.work_dir.exists())
@@ -110,7 +111,7 @@ class StoreTest(unittest.TestCase):
         self.add([row(utc(2026, 10, 1, 1), utc(2026, 10, 1, 2), 1.0)])
         self.add([row(utc(2026, 10, 2, 1), utc(2026, 10, 2, 1), 2.0), row(utc(2026, 10, 2, 2), utc(2026, 10, 2, 3), 4.0)])
         hourly = self.store._hourly_file()
-        self.assertEqual(self.query("SELECT cost FROM ROWS ORDER BY cost", [hourly]), [(2.0,), (4.0,)])
+        self.assertEqual(self.query("SELECT cost, net_cost FROM ROWS ORDER BY cost", [hourly]), [(2.0, 2.0), (4.0, 4.0)])
 
     def test_nothing_staged_changes_nothing(self):
         self.assertEqual(self.store.add(), 0)

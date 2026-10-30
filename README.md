@@ -74,7 +74,7 @@ To keep loads fast, `make run-gcp` does not read every column of the billing exp
 | Folder | What | Kept |
 |---|---|---|
 | `hourly/last_24h.parquet` | every billing row, one by one | rows exported in the last 24 hours |
-| `daily/YYYY-MM/data.parquet` | cost per usage day, project, service, SKU, resource, labels, ... | the latest 3 months |
+| `daily/YYYY-MM/data.parquet` | cost, credits and net cost (`net_cost` = cost + credits) per usage day, project, service, SKU, resource, labels, ... | the latest 3 months |
 | `monthly/YYYY-MM.parquet` | the same, per usage month | older months |
 
 Each load merges its rows into their month's day file. Months that fall out of the latest 3 are rolled

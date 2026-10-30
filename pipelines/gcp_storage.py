@@ -7,7 +7,7 @@ GCP billing data on disk for the Rill dashboards (filesystem destination).
       monthly/YYYY-MM.parquet    cost per usage month, for older months
 
 Daily and monthly files have the same columns: `grain` ('day' or 'month'), `date` (the day, or the 1st of
-the month), the dimensions the dashboards group by (DIMENSIONS), summed measures (MEASURES), the
+the month), the dimensions the dashboards group by (DIMENSIONS), summed measures (MEASURES: cost, credits, net cost, usage), the
 export_time range of the rows summed and `row_count`, the number of billing rows summed.
 Totals per month do not change when days are rolled up into a month.
 
@@ -62,7 +62,8 @@ FIELD_TYPES = {
 # Label key -> column. These are the labels the Rill models read.
 LABEL_COLUMNS = {"k8s-namespace": "k8s_namespace", "k8s-workload-name": "k8s_workload", "app": "app_label"}
 
-MEASURES = ["cost", "credits_total", "cost_at_list", "usage__amount", "usage__amount_in_pricing_units"]
+# net_cost = cost + credits_total (credits are negative), stored so readers of the files need not work it out.
+MEASURES = ["cost", "credits_total", "net_cost", "cost_at_list", "usage__amount", "usage__amount_in_pricing_units"]
 _NOT_DIMENSIONS = set(MEASURES) | {"usage_start_time", "export_time"}
 DIMENSIONS = [name for name, _ in FIELDS if name not in _NOT_DIMENSIONS] + list(LABEL_COLUMNS.values())
 
@@ -184,7 +185,7 @@ class Store:
             source_sql = _read(staged)
         con = self._connect()
         try:
-            con.execute(f"CREATE TEMP TABLE new_rows AS {source_sql}")
+            con.execute(f"CREATE TEMP TABLE new_rows AS SELECT *, cost + credits_total AS net_cost FROM ({source_sql})")
             added = con.execute("SELECT COUNT(*) FROM new_rows").fetchone()[0]
             if added:
                 self._add_daily(con)

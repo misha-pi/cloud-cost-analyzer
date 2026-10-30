@@ -53,7 +53,6 @@ SELECT
   b.location__country AS country,
   b.project__id AS project_id,
   b.project__name AS project_name,
-  b.cost + b.credits_total AS net_cost,
   b.*
 FROM {{ ref "gcp_billing_raw" }} b
 WHERE b.cost IS NOT NULL
