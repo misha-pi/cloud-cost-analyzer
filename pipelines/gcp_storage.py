@@ -3,17 +3,19 @@ GCP billing data on disk for the Rill dashboards (filesystem destination).
 
     viz_rill/data/gcp_costs/
       hourly/last_24h.parquet    billing rows exported in the last 24 hours, one row per billing row
-      daily/YYYY-MM/data.parquet cost per usage day, for the latest DAILY_MONTHS months
+      daily/YYYY-MM/*.parquet    cost per usage day, for the latest DAILY_MONTHS months (a file per load)
       monthly/YYYY-MM.parquet    cost per usage month, for older months
 
 Daily and monthly files have the same columns: `grain` ('day' or 'month'), `date` (the day, or the 1st of
 the month), the dimensions the dashboards group by (DIMENSIONS), summed measures (MEASURES: cost, credits, net cost, usage), the
 export_time range of the rows summed and `row_count`, the number of billing rows summed.
-Totals per month do not change when days are rolled up into a month.
+Totals per month do not change when days are rolled up into a month. A load only writes its own day file:
+rewriting a whole month on every load needs more memory than the server has.
 
 The incremental cursor is the latest export_time in these files, so there is no separate state to keep
 in sync with the data.
 """
+import datetime
 import os
 import pathlib
 import shutil
@@ -191,7 +193,7 @@ class Store:
             source_sql = _read(staged)
         con = self._connect(on_disk=True)
         try:
-            con.execute(f"CREATE TABLE new_rows AS SELECT *, cost + credits_total AS net_cost FROM ({source_sql})")
+            con.execute(f"CREATE OR REPLACE TABLE new_rows AS SELECT *, cost + credits_total AS net_cost FROM ({source_sql})")
             added = con.execute("SELECT COUNT(*) FROM new_rows").fetchone()[0]
             if added:
                 self._add_daily(con)
@@ -211,36 +213,30 @@ class Store:
 
     def _add_daily(self, con) -> None:
         raw = "SELECT *, export_time AS first_export_time, 1 AS row_count FROM new_rows"
-        con.execute(f"CREATE TABLE new_daily AS {_rollup_sql(raw, 'usage_start_time', 'day')}")
+        con.execute(f"CREATE OR REPLACE TABLE new_daily AS {_rollup_sql(raw, 'usage_start_time', 'day')}")
         months = [m for (m,) in con.execute(
             "SELECT DISTINCT strftime(date, '%Y-%m') FROM new_daily ORDER BY 1"
         ).fetchall()]
-        # Write every month first, then swap them in, so an interrupted load leaves the old files.
+        name = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%f") + ".parquet"
+        # Write every month first, then move them in, so an interrupted load adds nothing.
         written = []
         for month in months:
-            old = self._daily_files(month)
-            source = f"SELECT * FROM new_daily WHERE strftime(date, '%Y-%m') = '{month}'"
-            if old:
-                source += f" UNION ALL BY NAME {_read(old)}"
-            tmp = self.work_dir / "daily" / month / "data.parquet"
-            self._write(con, _rollup_sql(source, "date", "day"), tmp)
-            written.append((month, tmp, old))
-        for month, tmp, old in written:
-            target = self.root / "daily" / month / "data.parquet"
+            tmp = self.work_dir / "daily" / month / name
+            self._write(con, f"SELECT * FROM new_daily WHERE strftime(date, '%Y-%m') = '{month}'", tmp)
+            written.append((month, tmp))
+        for month, tmp in written:
+            target = self.root / "daily" / month / name
             target.parent.mkdir(parents=True, exist_ok=True)
             os.replace(tmp, target)
-            for f in old:
-                if f != target:
-                    f.unlink()
 
     def _update_hourly(self, con) -> None:
         hourly = self._hourly_file()
-        source = "SELECT * FROM new_rows"
+        con.execute("CREATE OR REPLACE TABLE hourly_rows AS SELECT * FROM new_rows")
         if hourly.exists():
-            source += f" UNION ALL BY NAME {_read([hourly])}"
+            con.execute(f"INSERT INTO hourly_rows BY NAME {_read([hourly])}")
         query = (
-            f"SELECT * FROM ({source}) "
-            f"WHERE export_time > (SELECT MAX(export_time) FROM ({source})) - INTERVAL {HOURLY_WINDOW}"
+            "SELECT * FROM hourly_rows "
+            f"WHERE export_time > (SELECT MAX(export_time) FROM hourly_rows) - INTERVAL {HOURLY_WINDOW}"
         )
         self._write(con, query, hourly)
 
