@@ -72,8 +72,8 @@ class StoreTest(unittest.TestCase):
             row(utc(2026, 10, 2, 0), utc(2026, 10, 2, 3), 8.0, k8s_workload="api"),
         ])
         self.assertEqual(added, 4)
-        self.assertEqual([p.relative_to(self.root).as_posix() for p in self.store._daily_files()],
-                         ["daily/2026-10/data.parquet"])
+        self.assertEqual([p.parent.relative_to(self.root).as_posix() for p in self.store._daily_files()],
+                         ["daily/2026-10"])
         self.assertEqual(
             self.stored("SELECT grain, date, k8s_workload, cost, credits_total, net_cost, row_count FROM ROWS "
                         "ORDER BY date, k8s_workload"),
@@ -84,11 +84,12 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(self.store.export_time_range(), (utc(2026, 10, 1, 5), utc(2026, 10, 2, 3)))
         self.assertFalse(self.store.work_dir.exists())
 
-    def test_later_loads_merge_into_the_month_file(self):
+    def test_each_load_adds_its_own_day_file(self):
         self.add([row(utc(2026, 10, 1, 1), utc(2026, 10, 1, 5), 1.0)])
         self.add([row(utc(2026, 10, 1, 9), utc(2026, 10, 2, 5), 2.0)])
-        self.assertEqual(len(self.store._daily_files()), 1)
-        self.assertEqual(self.stored("SELECT date, cost, row_count FROM ROWS"), [(dt.date(2026, 10, 1), 3.0, 2)])
+        self.assertEqual(len(self.store._daily_files("2026-10")), 2)
+        self.assertEqual(self.stored("SELECT date, SUM(cost), SUM(row_count) FROM ROWS GROUP BY date"),
+                         [(dt.date(2026, 10, 1), 3.0, 2)])
         self.assertEqual(self.store.export_time_range(), (utc(2026, 10, 1, 5), utc(2026, 10, 2, 5)))
 
     def test_months_older_than_daily_months_are_rolled_up(self):
