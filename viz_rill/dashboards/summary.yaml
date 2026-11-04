@@ -43,6 +43,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: provider
             type: nominal
         width: 12

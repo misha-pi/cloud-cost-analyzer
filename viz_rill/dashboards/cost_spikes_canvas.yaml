@@ -120,6 +120,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: provider
             type: nominal
         width: 6
@@ -139,6 +140,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: series
             type: nominal
             limit: 6
@@ -157,6 +159,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: series
             type: nominal
             limit: 6
@@ -177,6 +180,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: series
             type: nominal
             limit: 6
