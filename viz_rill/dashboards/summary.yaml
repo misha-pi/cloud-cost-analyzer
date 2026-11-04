@@ -18,7 +18,7 @@ rows:
               (e.g. "Main App - MS - Production" goes to main app); projects matching no app go to **other**.
             - **MongoDB Pro**: Atlas charges for the whole organisation rather than one project (e.g. a support plan),
               shared across the apps in proportion to their MongoDB cost. We have none so far, so this row is not shown.
-            - **AWS**: net cost per AWS service (and Marketplace products such as Vercel) in its own column,
+            - **AWS**: net cost per AWS service (and Vercel, billed through AWS) in its own column,
               **AWS (not split by app)**, as there are no rules yet for which AWS account or tag belongs to which app.
         width: 12
     height: 180px

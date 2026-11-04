@@ -54,9 +54,9 @@ measures:
     display_name: "AWS cost"
     expression: "SUM(CASE WHEN provider = 'AWS' THEN cost ELSE 0 END)"
     format_preset: currency_usd
-  - name: marketplace_cost
-    display_name: "Marketplace via AWS (e.g. Vercel)"
-    expression: "SUM(CASE WHEN provider LIKE '% (via AWS)' THEN cost ELSE 0 END)"
+  - name: vercel_cost
+    display_name: "Vercel (via AWS)"
+    expression: "SUM(CASE WHEN provider = 'Vercel (via AWS)' THEN cost ELSE 0 END)"
     format_preset: currency_usd
   - name: atlas_share
     display_name: "Atlas share"
