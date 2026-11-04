@@ -78,5 +78,5 @@ FROM (
          amount, transaction_type, original_currency, amount_usd
   FROM gcp_cost_data
 )
+-- No ORDER BY: sorting the ~5.6M rows while building the table runs out of Rill's memory on the server.
 WHERE date IS NOT NULL
-ORDER BY date DESC
