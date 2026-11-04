@@ -4,7 +4,7 @@ type: canvas
 display_name: "Cloud Cost: GCP, MongoDB Atlas, AWS and Vercel"
 
 defaults:
-  time_range: P3M
+  time_range: P30D
   comparison_mode: time
 
 rows:
