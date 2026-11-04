@@ -1,0 +1,20 @@
+# AWS's own daily cost by service, top 10 and Other (model: aws_service_daily)
+version: 1
+type: metrics_view
+
+display_name: AWS Cost by Service (top 10)
+model: aws_service_daily
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: service
+    display_name: Service
+    column: service
+    description: "The 10 AWS services with the most cost over all loaded months; the rest is Other"
+
+measures:
+  - name: total_net_cost
+    display_name: "AWS cost"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd

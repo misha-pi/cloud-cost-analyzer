@@ -1,4 +1,4 @@
-# Cost summary for the leaders: one month at a time, GCP and MongoDB Atlas together. Has the
+# Cost summary for the leaders: one month at a time, GCP, MongoDB Atlas and AWS together. Has the
 # "Each service's cost by app" table of gcp_overview_service_app plus the MongoDB rows, the "Cost over time
 # by provider" chart of gcp_atlas_canvas and the "Kubernetes cost by workload" table of
 # gcp_overview_service_app.
@@ -13,13 +13,15 @@ rows:
       - markdown:
           content: |
             Monthly cost by app: GCP net cost (after credits) per service, the same as the **GCP Cost by Service and App**
-            page, plus MongoDB Atlas. Pick a month in the time filter.
+            page, plus MongoDB Atlas and AWS. Pick a month in the time filter.
             - **MongoDB**: each Atlas project's billed cost, given to the app whose name is in the project name
               (e.g. "Main App - MS - Production" goes to main app); projects matching no app go to **other**.
             - **MongoDB Pro**: Atlas charges for the whole organisation rather than one project (e.g. a support plan),
               shared across the apps in proportion to their MongoDB cost. We have none so far, so this row is not shown.
+            - **AWS**: net cost per AWS service (and Marketplace products such as Vercel) in its own column,
+              **AWS (not split by app)**, as there are no rules yet for which AWS account or tag belongs to which app.
         width: 12
-    height: 150px
+    height: 180px
   - items:
       - pivot:
           metrics_view: summary_app_cost_metrics

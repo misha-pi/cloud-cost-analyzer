@@ -1,9 +1,0 @@
-type: explore
-display_name: AWS Cost Explore
-metrics_view: aws_cost_metrics
-
-dimensions: "*"
-measures: "*"
-
-defaults:
-  time_range: P30D

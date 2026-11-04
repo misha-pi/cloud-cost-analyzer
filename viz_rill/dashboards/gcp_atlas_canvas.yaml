@@ -1,25 +1,26 @@
-# GCP and MongoDB Atlas cost side by side (model: cloud_provider_costs).
+# GCP, MongoDB Atlas, AWS and AWS Marketplace cost side by side (model: cloud_provider_costs).
 # Time charts follow the time grain picked in the time filter (day, week, month, year).
 type: canvas
-display_name: "GCP and MongoDB Atlas Cost"
+display_name: "Cloud Cost: GCP, MongoDB Atlas, AWS and Vercel"
 
 defaults:
-  time_range: P3M
+  time_range: P30D
   comparison_mode: time
 
 rows:
   - items:
       - markdown:
           content: |
-            Total cloud cost by provider. GCP is net cost after credits (as on the GCP pages); MongoDB Atlas is the
-            billed line item cost. Atlas is billed through the GCP Marketplace, so it is counted only once, as Atlas.
-            **Project / cluster** is the GCP project or the Atlas project and cluster.
+            Total cloud cost by provider. GCP and AWS are net cost after credits (as on their own pages); MongoDB
+            Atlas is the billed line item cost. Atlas is billed through the GCP Marketplace and counted once, as Atlas;
+            products bought through AWS Marketplace are shown as their own provider, e.g. **Vercel (via AWS)**.
+            **Project / cluster / account** is the GCP project, the Atlas project and cluster, or the AWS account.
         width: 12
-    height: 80px
+    height: 100px
   - items:
       - kpi_grid:
           metrics_view: cloud_provider_cost_metrics
-          measures: [total_cost, gcp_cost, atlas_cost, atlas_share]
+          measures: [total_cost, gcp_cost, atlas_cost, aws_cost, marketplace_cost]
           comparison: [delta, percent_change]
         width: 12
     height: 160px
@@ -85,7 +86,7 @@ rows:
       # A table, not a leaderboard: a leaderboard with two fields draws two separate lists.
       - table:
           metrics_view: cloud_provider_cost_metrics
-          title: "Top GCP projects and Atlas clusters"
+          title: "Top GCP projects, Atlas clusters and AWS accounts"
           columns: [provider, component, total_cost]
         width: 6
       - stacked_bar:

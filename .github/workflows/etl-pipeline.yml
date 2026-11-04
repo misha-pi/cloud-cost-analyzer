@@ -60,12 +60,6 @@ jobs:
           stripe_secret_key = "${{ secrets.STRIPE_SECRET_KEY }}"
           EOF
 
-      - name: Run AWS pipeline
-        env:
-          DLT_DESTINATION: clickhouse
-        run: uv run python pipelines/aws_pipeline.py
-        continue-on-error: false
-
       - name: Run GCP pipeline
         env:
           DLT_DESTINATION: clickhouse

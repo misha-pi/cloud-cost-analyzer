@@ -2,7 +2,7 @@
 version: 1
 type: metrics_view
 
-display_name: GCP and Atlas Cost
+display_name: GCP, Atlas and AWS Cost
 model: cloud_provider_costs
 timeseries: date
 smallest_time_grain: "day"
@@ -26,7 +26,7 @@ dimensions:
         WHEN REGEXP_MATCHES(LOWER(component), '(^|[^a-z0-9])(test|testing|qa|e2e)([^a-z0-9]|$)') THEN 'Test'
         ELSE 'Other' END
   - name: component
-    display_name: Project / cluster
+    display_name: Project / cluster / account
     column: component
   - name: month
     display_name: Month
@@ -39,7 +39,7 @@ measures:
   - name: total_cost
     display_name: "Cost"
     expression: "SUM(cost)"
-    description: "GCP net cost after credits plus Atlas billed cost"
+    description: "GCP and AWS net cost after credits plus Atlas billed cost"
     format_preset: currency_usd
     valid_percent_of_total: true
   - name: atlas_cost
@@ -49,6 +49,14 @@ measures:
   - name: gcp_cost
     display_name: "GCP net cost"
     expression: "SUM(CASE WHEN provider = 'GCP' THEN cost ELSE 0 END)"
+    format_preset: currency_usd
+  - name: aws_cost
+    display_name: "AWS cost"
+    expression: "SUM(CASE WHEN provider = 'AWS' THEN cost ELSE 0 END)"
+    format_preset: currency_usd
+  - name: marketplace_cost
+    display_name: "Marketplace via AWS (e.g. Vercel)"
+    expression: "SUM(CASE WHEN provider LIKE '% (via AWS)' THEN cost ELSE 0 END)"
     format_preset: currency_usd
   - name: atlas_share
     display_name: "Atlas share"

@@ -22,23 +22,19 @@ dataset_name_prefix = ""  # No prefix for clean dataset names
 [destination.motherduck.credentials]
 database = "cloud_cost_analytics"
 
-[sources.filesystem]
-local_dir = "/home/sspaeti/Documents/datalake/dlt-stage" # fill this in!
-bucket_url = "https://s3.us-west-1.amazonaws.com" # fill this in!
-
 # Pipeline configuration
 [pipeline]
 pipeline_name = "cloud_cost_analytics"
 
-# AWS CUR configuration
-[sources.aws_cur]
-bucket_url = "s3://cost-analysis-demo-sspaeti"
-file_glob = "cur/CUR-export-test/data/**/*.parquet"
-table_name = "cur_export_test_00001"
-dataset_name = "aws_costs"
-initial_start_date = "2025-09-01"  # Only load data from this date onwards (filters by file modification date)
-input_data_dir = "viz_rill/data/aws_costs/cur_export_test_00001"  # Directory where AWS parquet files are loaded
-normalized_data_dir = "viz_rill/data/aws_costs"  # Directory for normalized AWS data
+# AWS cost from the Cost Explorer API (pipelines/aws_cost_explorer_pipeline.py, `make run-aws`).
+# The key goes in .dlt/secrets.toml under [sources.aws] (aws_access_key_id, aws_secret_access_key);
+# it only needs the ce:GetCostAndUsage permission.
+[sources.aws]
+region_name = "us-east-1"  # Cost Explorer's API region, whatever region the AWS resources are in
+# Cost allocation tag keys to load cost by (Billing > Cost allocation tags; only active tags have cost).
+tag_keys = []
+# Marketplace products billed through AWS, shown as their own provider "<name> (via AWS)".
+marketplace_services = ["Vercel"]
 
 # GCP BigQuery billing export configuration
 [sources.gcp_billing]

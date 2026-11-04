@@ -7,7 +7,7 @@
 # Without CONFIRM=1 it only shows what would be deleted. `make clear-gcp`, `make clear-atlas` and
 # `make clear-source SOURCE=...` call this.
 #
-# GCP (`make run-gcp`) and Atlas (`make run-atlas`) reload in full by themselves once their folder is
+# GCP (`make run-gcp`), Atlas (`make run-atlas`) and AWS (`make run-aws`) reload in full by themselves once their folder is
 # gone. Other pipelines keep an incremental cursor in dlt's local state: run `make dlt-clear` as well.
 set -eu
 

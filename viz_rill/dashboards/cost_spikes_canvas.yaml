@@ -5,7 +5,7 @@ type: canvas
 display_name: "Cost Spikes"
 
 defaults:
-  time_range: P90D
+  time_range: P30D
   comparison_mode: none
 
 rows:

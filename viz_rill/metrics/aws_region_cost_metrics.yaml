@@ -1,0 +1,27 @@
+# AWS cost per service and region, from Cost Explorer (model: aws_by_region)
+version: 1
+type: metrics_view
+
+display_name: AWS Cost by Region
+model: aws_by_region
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: provider
+    display_name: Provider
+    column: provider
+  - name: service
+    display_name: Service
+    column: service
+  - name: region
+    display_name: Region
+    column: region
+    description: "AWS region; \"global\" for services without one (e.g. CloudFront, Route 53)"
+
+measures:
+  - name: total_net_cost
+    display_name: "Net cost"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd
+    valid_percent_of_total: true

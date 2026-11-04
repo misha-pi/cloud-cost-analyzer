@@ -87,8 +87,10 @@ monthly totals and keeps the old files unless `DELETE_OLD=1`).
 ### Daily load
 
 On the server, `make install-cron` adds `scripts/daily_load.sh` to root's crontab (02:00 UTC; set
-`CRON_TIME` to change it). It runs `make run-etl` (GCP, then Atlas, then a Rill refresh) with Rill left
-running, and writes to `logs/daily_load.log`.
+`CRON_TIME` to change it). It runs GCP, Atlas and AWS (`make run-gcp`, `run-atlas`, `run-aws`) one after the
+other, each on its own: a failing source is logged as `<source> FAILED` and the others still load. Rill is
+refreshed at the end either way, and the run exits with an error if any source failed. Rill is left running.
+Everything goes to `logs/daily_load.log`, trimmed to its last 5000 lines after each run.
 
 ### Loading a past date range (GCP)
 
@@ -173,6 +175,37 @@ curl -X POST http://localhost:9009/v1/instances/default/trigger -H 'content-type
   -d '{"models":[{"model":"atlas_line_items_raw","full":true},{"model":"atlas_invoices_raw","full":true},{"model":"cloud_provider_costs","full":true}]}'
 ```
 
+## AWS cost
+
+The **AWS Cost** page and the AWS rows on the **Cloud Cost**, **Cost Summary** and **Cost Spikes** pages read
+AWS's Cost Explorer API (`make run-aws`, `pipelines/aws_cost_explorer_pipeline.py`; key setup above). It
+loads daily cost, and net cost after credits, for all linked accounts into
+`viz_rill/data/aws_costs/<table>/YYYY-MM.parquet`, one file per month, kept with no roll-up (about 2 MB a year):
+
+| Table | Cost per day by |
+|---|---|
+| `by_account` | service and linked account |
+| `by_region` | service and region |
+| `by_usage_type` | service and usage type, with the usage quantity |
+| `by_tag` | service and tag value, for each key in `tag_keys` |
+
+- Each run downloads the current month again (AWS revises recent days), any of the last 13 months that has no
+  file yet (so the first run loads all 13), and any month whose file still has days AWS marks as estimated (the
+  previous month, until AWS finalises it). Files are swapped in only after all of a month's requests succeed.
+  Each request costs $0.01; Cost Explorer pages daily results, so the daily run makes about 7 (about 14 in a
+  month's first days, more per tag key) and the first run about 90.
+- Products bought through AWS Marketplace (`marketplace_services`, default `Vercel`) are their own provider,
+  `Vercel (via AWS)`, like Atlas billed through GCP; a service matches when its name starts with the product
+  name (e.g. "Vercel Frontend Cloud").
+- Cost by tag needs the tag keys to be active as **cost allocation tags** (AWS Billing → Cost allocation tags);
+  AWS reports a tag's cost only from its activation day (a backfill of up to about 12 months can be requested).
+  List the keys in `[sources.aws] tag_keys`.
+- On the Cost Summary page AWS has its own app column, "AWS (not split by app)": there are no rules yet for
+  which AWS account or tag belongs to which app.
+- Per-resource cost (per EC2 instance or S3 bucket) is not available from Cost Explorer this way.
+- Without a key, `make run-aws` writes empty AWS files so the pages still build. `make aws-demo-data` (run by
+  `make demo`) writes made-up AWS data.
+
 ## Clearing one source's data
 
 `make clear` deletes all local data and all pipeline state at once. To reload a single source, clear
@@ -184,8 +217,8 @@ CONFIRM=1 make clear-atlas   # deletes viz_rill/data/atlas_billing
 make run-atlas               # reloads it in full
 ```
 
-The same works with `make clear-gcp` (then `make run-gcp`; GCP is slow to reload, about 8 h for 1.5
-months) and `make clear-source SOURCE=<dataset folder>` for any other source. GCP and Atlas reload in
+The same works with `make clear-gcp` (then `make run-gcp`), `make clear-aws` (then `make run-aws`) and
+`make clear-source SOURCE=<dataset folder>` for any other source. GCP, Atlas and AWS reload in
 full by themselves once their folder is gone; other pipelines keep an incremental cursor in dlt's
 local state, so also run `make dlt-clear` for them. If `make serve` is running, restart it after the
 reload. To add a new source, add a `clear-<source>` target next to `clear-gcp` in the `Makefile`.
@@ -250,7 +283,6 @@ Perfect for: Production, team collaboration, large datasets, public dashboards
 **Additional commands:**
 
 ```sh
-make aws-dashboards  # Generate dynamic AWS dashboards (local mode only)
 make serve-clickhouse  # View dashboards connected to ClickHouse
 ```
 
@@ -286,36 +318,26 @@ uv sync  # Installs all packages from pyproject.toml
 
 You need to set up cost/revenue exports from each cloud provider:
 
-#### AWS Cost and Usage Report (CUR)
+#### AWS (Cost Explorer API)
 
-**One-time setup in AWS Console**:
+AWS cost is read from the Cost Explorer API, the same numbers as the AWS console's cost charts. No export or
+S3 bucket is needed, only a read-only key. In the AWS management (payer) account, so all linked accounts are
+included:
 
-1. Go to [AWS Billing Console](https://us-east-1.console.aws.amazon.com/billing/home?region=us-east-1#/bills) → **Cost & Usage Reports**
-2. Click **"Create report"**
-3. Configure:
-  - Report name: `CUR-export-test` (or your choice)
-  - Time granularity: **Hourly** or **Daily**
-  - Enable: **Include resource IDs**
-  - Report data integration: Select **Amazon Athena** (enables Parquet format)
-  - S3 bucket: Choose or create a bucket (e.g., `s3://your-bucket/cur`)
-  - Enable: **Overwrite existing report**
+1. **IAM → Policies → Create policy → JSON**, name it e.g. `CostExplorerRead`:
+   ```json
+   { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Action": "ce:GetCostAndUsage", "Resource": "*" }] }
+   ```
+2. **IAM → Users → Create user** (no console access) with only that policy, then **Security credentials →
+   Create access key → Application running outside AWS**.
+3. Put the key in `.dlt/secrets.toml`:
+   ```toml
+   [sources.aws]
+   aws_access_key_id = "..."
+   aws_secret_access_key = "..."
+   ```
 
-AWS will automatically generate and upload CUR files to your S3 bucket daily.
-
-**Set AWS credentials**:
-
-```bash
-# Option 1: Environment variables (recommended)
-export AWS_ACCESS_KEY_ID="your-key"
-export AWS_SECRET_ACCESS_KEY="your-secret"
-
-# Option 2: Edit .dlt/secrets.toml
-[sources.filesystem.credentials]
-aws_access_key_id = "your-key"
-aws_secret_access_key = "your-secret"
-```
-
-The `.env` file automatically sources these for dlt.
+See [AWS cost](#aws-cost) for what is loaded.
 
 #### Google Cloud Platform (BigQuery Export)
 
@@ -382,13 +404,11 @@ All pipeline configuration is centralized in `.dlt/config.toml`. Edit this file 
 [pipeline]
 pipeline_name = "cloud_cost_analytics"  # Change if needed
 
-# AWS CUR configuration
-[sources.aws_cur]
-bucket_url = "s3://your-bucket-name"  # Your S3 bucket
-file_glob = "cur/your-report-name/data/**/*.parquet"  # Path to your CUR files
-table_name = "your_table_name"  # Name for the output table
-dataset_name = "aws_costs"  # Dataset name (default: aws_costs)
-initial_start_date = "2025-09-01"  # Only load data from this date onwards (filters by file modification date)
+# AWS Cost Explorer (the key goes in secrets.toml)
+[sources.aws]
+region_name = "us-east-1"  # Cost Explorer's API region
+tag_keys = []  # cost allocation tag keys to load cost by
+marketplace_services = ["Vercel"]  # Marketplace products shown as "<name> (via AWS)"
 
 # GCP BigQuery billing export configuration
 [sources.gcp_billing]
@@ -416,7 +436,7 @@ initial_start_date = "2025-09-01"  # Only load data from this date onwards (filt
 
 The `initial_start_date` parameter controls how far back to load historical data when running the pipeline for the first time. This is especially important when copying this project to avoid loading 10+ years of historical data:
 
-- **AWS**: Filters files by modification date. Format: `"YYYY-MM-DD"` (e.g., `"2025-09-01"`)
+- **AWS**: not used; Cost Explorer gives the last 13 months, all of which are loaded
 - **GCP**: Filters records by `export_time` field. Format: `"YYYY-MM-DDTHH:MM:SSZ"` (e.g., `"2025-09-01T00:00:00Z"`)
 - **Stripe**: Filters transactions by created timestamp. Format: `"YYYY-MM-DD"` (e.g., `"2025-09-01"`)
 
@@ -424,7 +444,7 @@ The `initial_start_date` parameter controls how far back to load historical data
 
 - Once data is loaded, subsequent runs only load new data (incremental loading)
 - To reset and reload from a different start date, run `make dlt-clear` to clear the dlt state
-- If omitted, AWS/Stripe will load all available data, and GCP will default to loading from 2000-01-01
+- If omitted, Stripe will load all available data, and GCP will default to loading from 2000-01-01
 - Recommended: Set to a recent date (e.g., 3-6 months ago) to keep initial data load manageable
 
 **How to find your GCP billing table names:**
@@ -433,9 +453,6 @@ The `initial_start_date` parameter controls how far back to load historical data
 2. Find your billing export dataset (usually `billing_export`)
 3. Look for tables starting with `gcp_billing_export_v1_` or `gcp_billing_export_resource_v1_`
 4. Copy the full table names into the config above
-
-**Note about AWS table_name and Rill dashboards:**
-If you change the AWS `table_name` from the default `cur_export_test_00001`, you'll also need to update the parquet path in `viz_rill/models/aws_costs.sql` (file has comments showing where).
 
 #### Cloud Deployment with ClickHouse & Rill Cloud
 
@@ -492,11 +509,11 @@ This pipeline supports both **local mode** (Parquet + DuckDB) and **cloud mode**
 graph TB
 
 subgraph "1: EXTRACT (dlt)"
-    A1[AWS S3<br/>CUR Parquet]
+    A1[AWS<br/>Cost Explorer API]
     A2[GCP BigQuery<br/>Billing Export]
     A3[Stripe API<br/>Revenue]
 
-    P1[aws_pipeline.py<br/>📥 Incremental]
+    P1[aws_cost_explorer_pipeline.py<br/>📥 Month files]
     P2[google_bq_pipeline.py<br/>📥 Incremental]
     P3[stripe_pipeline.py<br/>📥 Incremental]
 
@@ -524,7 +541,7 @@ subgraph "3: STORAGE (Dual Mode)"
 end
 
 subgraph "4: MODEL (SQL - Star Schema)"
-    M1[aws_costs.sql<br/>🔷 Dimensions + Facts]
+    M1[aws_by_*.sql<br/>🔷 Daily cost]
     M2[gcp_costs.sql<br/>🔷 Dimensions + Facts]
     M3[stripe_revenue.sql<br/>🔷 Dimensions + Facts]
     M4[unified_cost_model.sql<br/>🌟 UNION ALL + Currency Conversion]
@@ -591,7 +608,7 @@ Uses `write_disposition="append"` - cost data is append-only (no updates/merges 
 
 ```
 Cloud Providers    dlt Pipelines          Storage              Visualization
-AWS S3 (CUR)   →   aws_pipeline.py   →   Parquet files    →   Rill (DuckDB)
+AWS Cost Explorer → aws_cost_explorer_pipeline.py → Parquet files → Rill (DuckDB)
 GCP BigQuery   →   google_bq_*.py    →   viz_rill/data/   →   localhost:9009
 Stripe API     →   stripe_pipeline.py →                   →
 ```
@@ -600,7 +617,6 @@ Stripe API     →   stripe_pipeline.py →                   →
 
 ```
 Cloud Providers    dlt Pipelines          Storage               Visualization
-AWS S3 (CUR)   →   aws_pipeline.py   →   ClickHouse Cloud  →   Rill Cloud/Local
 GCP BigQuery   →   google_bq_*.py    →   (via dlt)         →   (connects to CH)
 Stripe API     →   stripe_pipeline.py →                    →
                         ↓
@@ -635,11 +651,13 @@ See [workflow configuration](.github/workflows/etl-pipeline.yml) for details.
 
 
 
-### AWS: "No files found"
+### AWS: "AccessDeniedException" or no AWS data
 
-- Check S3 bucket path in `.dlt/config.toml` under `[sources.aws_cur]`
-- Verify AWS credentials: `aws s3 ls s3://your-bucket/`
-- Wait 24 hours after enabling CUR export (first files take time)
+- The key in `.dlt/secrets.toml` `[sources.aws]` needs the `ce:GetCostAndUsage` permission, in the management
+  (payer) account to see all linked accounts.
+- If the key has the permission but is still denied, the account owner may need to switch on "IAM user and role
+  access to Billing information" (AWS Account settings).
+- `make run-aws` prints "No AWS key" when the key is missing; the AWS pages are then empty.
 
 
 
@@ -712,8 +730,6 @@ But it provides useful dashboards (alredy pre commited in this repo), but if you
 **Important:** This only works in **local mode** (parquet files). ClickHouse mode doesn't create parquet files, so dynamic dashboard generation is unavailable.
 
 ```bash
-# Local mode only - Generate AWS canvases (optional)
-make aws-dashboards  # Normalizes + generates canvases/explores/
 
 # View all dashboards (static + generated)
 make serve
@@ -723,7 +739,6 @@ make serve
 
 - `viz_rill/canvases/*.yaml` - Dimension-specific breakdowns
 - `viz_rill/explores/*.yaml` - Auto-generated explorers
-- `viz_rill/data/normalized_aws.parquet` - Flattened AWS data
 
 
 
@@ -733,7 +748,6 @@ make serve
 | Feature                      | Local Mode (Parquet)          | Cloud Mode (ClickHouse)    |
 | ---------------------------- | ----------------------------- | -------------------------- |
 | Static dashboards            | ✅ Always work                 | ✅ Always work              |
-| Dynamic dashboard generation | ✅ `make aws-dashboards`       | ❌ Not available*           |
 | Data storage                 | Parquet files                 | ClickHouse Cloud           |
 | Normalization                | Optional                      | Not needed                 |
 | Best for                     | Development, dynamic canvases | Production, GitHub Actions |
@@ -755,7 +769,6 @@ make run-all
 
 # Or step-by-step:
 make run-etl         # 1. Load AWS/GCP/Stripe data → Parquet files
-make aws-dashboards  # 2. (Optional) Generate dynamic dashboards
 make serve           # 3. View in browser at localhost:9009
 ```
 

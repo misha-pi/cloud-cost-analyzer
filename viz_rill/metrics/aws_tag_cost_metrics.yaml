@@ -1,0 +1,29 @@
+# AWS cost per service and cost allocation tag value, from Cost Explorer (model: aws_by_tag)
+version: 1
+type: metrics_view
+
+display_name: AWS Cost by Tag
+model: aws_by_tag
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: provider
+    display_name: Provider
+    column: provider
+  - name: service
+    display_name: Service
+    column: service
+  - name: tag_key
+    display_name: Tag
+    column: tag_key
+  - name: tag_value
+    display_name: Tag value
+    column: tag_value
+    description: "\"(no tag)\" is cost of resources without that tag"
+
+measures:
+  - name: total_net_cost
+    display_name: "Net cost"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd
