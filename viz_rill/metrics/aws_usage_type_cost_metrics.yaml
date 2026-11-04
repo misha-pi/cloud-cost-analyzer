@@ -21,6 +21,9 @@ dimensions:
   - name: usage_unit
     display_name: Unit
     column: usage_unit
+  - name: usage_label
+    display_name: Usage type (service, unit)
+    expression: "usage_type || ' (' || service || COALESCE(', ' || NULLIF(usage_unit, ''), '') || ')'"
 
 measures:
   - name: total_net_cost

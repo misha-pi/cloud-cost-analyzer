@@ -1,4 +1,5 @@
-# AWS cost from Cost Explorer (models: aws_by_account, aws_by_region, aws_by_usage_type, aws_by_tag).
+# AWS cost from Cost Explorer (models: aws_by_account, aws_service_daily, aws_by_region, aws_by_usage_type,
+# aws_by_tag).
 # Time charts follow the time grain picked in the time filter (day, week, month, year).
 type: canvas
 display_name: "AWS Cost"
@@ -25,13 +26,13 @@ rows:
     height: 160px
   - items:
       - stacked_bar:
-          metrics_view: aws_cost_metrics
-          title: "AWS cost over time by service (Marketplace products left out)"
+          metrics_view: aws_service_daily_metrics
+          title: "AWS cost over time by service (top 10 and Other; Marketplace products left out)"
           x:
             field: date
             type: temporal
           y:
-            field: aws_net_cost
+            field: total_net_cost
             type: quantitative
             zeroBasedOrigin: true
           color:
@@ -65,10 +66,12 @@ rows:
         width: 5
     height: 420px
   - items:
-      - table:
+      - leaderboard:
           metrics_view: aws_usage_type_cost_metrics
-          title: "Cost by usage type (what was billed)"
-          columns: [service, usage_type, total_usage, usage_unit, total_net_cost]
+          title: "Top 20 usage types (what was billed)"
+          dimensions: [usage_label]
+          measures: [total_net_cost, total_usage]
+          num_rows: 20
         width: 7
       - pivot:
           metrics_view: aws_tag_cost_metrics
