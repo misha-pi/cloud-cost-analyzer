@@ -192,7 +192,8 @@ loads daily cost, and net cost after credits, for all linked accounts into
 - Each run downloads the current month again (AWS revises recent days), any of the last 13 months that has no
   file yet (so the first run loads all 13), and any month whose file still has days AWS marks as estimated (the
   previous month, until AWS finalises it). Files are swapped in only after all of a month's requests succeed.
-  Each request costs $0.01; the daily run makes a handful, the first run about 90.
+  Each request costs $0.01; Cost Explorer pages daily results, so the daily run makes about 7 (about 14 in a
+  month's first days, more per tag key) and the first run about 90.
 - Products bought through AWS Marketplace (`marketplace_services`, default `Vercel`) are their own provider,
   `Vercel (via AWS)`, like Atlas billed through GCP; a service matches when its name starts with the product
   name (e.g. "Vercel Frontend Cloud").
