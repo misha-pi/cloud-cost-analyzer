@@ -1,4 +1,4 @@
-# One page to watch for cost spikes across providers (GCP and MongoDB Atlas for now).
+# One page to watch for cost spikes across providers: GCP, MongoDB Atlas, AWS and Vercel (bought through AWS).
 # Models: cost_spike_daily (charts) and cost_spike_movers (tiles and top movers), both built from
 # cloud_provider_costs: a new provider needs only its own block there, plus a tile row and a top 5 chart here.
 type: canvas
@@ -23,9 +23,10 @@ rows:
             | **Last 7 days vs previous 7 %** | Total of {{ metrics_sql "SELECT last_7d_period FROM cost_spike_metrics" }} vs total of {{ metrics_sql "SELECT prev_7d_period FROM cost_spike_metrics" }}. Catches a rise that lasts several days. |
             | **Month to date vs last month %** | Average cost per day of {{ metrics_sql "SELECT mtd_period FROM cost_spike_metrics" }} vs {{ metrics_sql "SELECT prev_mtd_period FROM cost_spike_metrics" }}. Per day, because last month can be shorter. |
 
-            Positive % = spending more. GCP is net cost after credits; MongoDB Atlas is the billed cost (bought through
-            the GCP Marketplace, counted once, as Atlas). Atlas lines not billed to a cluster show as
-            *(no project) / (no cluster)*.
+            Positive % = spending more. GCP and AWS are net cost after credits; MongoDB Atlas is the billed cost (bought
+            through the GCP Marketplace, counted once, as Atlas). Atlas lines not billed to a cluster show as
+            *(no project) / (no cluster)*. **Vercel** is bought through AWS Marketplace and billed in a few large amounts
+            a year, so each bill shows as a spike; its *Latest day loaded* is its last bill.
         width: 8
       - table:
           metrics_view: cost_spike_metrics
@@ -66,6 +67,30 @@ rows:
           hide_time_range: true
           comparison: []
           dimension_filters: "provider IN ('MongoDB Atlas')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "AWS"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "provider IN ('AWS')"
+          hide_local_filters: true
+        width: 12
+    height: 130px
+  - items:
+      - kpi_grid:
+          metrics_view: cost_spike_metrics
+          title: "Vercel (via AWS)"
+          measures: [latest_day_cost, latest_vs_avg_pct, wow_change_pct, mtd_change_pct]
+          sparkline: none
+          hide_time_range: true
+          comparison: []
+          dimension_filters: "provider IN ('Vercel (via AWS)')"
           hide_local_filters: true
         width: 12
     height: 130px
@@ -123,6 +148,26 @@ rows:
           title: "Atlas daily cost: top 5 project / clusters"
           description: "Top 5 project / clusters by cost in the last 30 days; the rest is in Other."
           dimension_filters: "provider IN ('MongoDB Atlas')"
+          hide_local_filters: true
+          x:
+            field: date
+            type: temporal
+          y:
+            field: daily_cost
+            type: quantitative
+            zeroBasedOrigin: true
+          color:
+            field: series
+            type: nominal
+            limit: 6
+        width: 6
+    height: 360px
+  - items:
+      - line_chart:
+          metrics_view: cost_spike_daily_metrics
+          title: "AWS daily cost: top 5 services"
+          description: "Top 5 AWS services by cost in the last 30 days; the rest is in Other."
+          dimension_filters: "provider IN ('AWS')"
           hide_local_filters: true
           x:
             field: date

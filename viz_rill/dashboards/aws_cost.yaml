@@ -1,5 +1,5 @@
-# AWS cost from Cost Explorer (models: aws_by_account, aws_service_daily, aws_by_region, aws_by_usage_type,
-# aws_by_tag).
+# AWS cost from Cost Explorer (models: aws_by_account, aws_service_daily, aws_by_region, aws_by_usage_type).
+# Cost by tag (aws_by_tag, aws_tag_cost_metrics) is loaded but not shown until cost allocation tags are active.
 # Time charts follow the time grain picked in the time filter (day, week, month, year).
 type: canvas
 display_name: "AWS Cost"
@@ -72,13 +72,7 @@ rows:
           dimensions: [usage_label]
           measures: [total_net_cost, total_usage]
           num_rows: 20
-        width: 7
-      - pivot:
-          metrics_view: aws_tag_cost_metrics
-          title: "Cost by tag (only tags active as cost allocation tags; empty until one is)"
-          row_dimensions: [tag_key, tag_value]
-          measures: [total_net_cost]
-        width: 5
+        width: 12
     height: 460px
   - items:
       - pivot:
