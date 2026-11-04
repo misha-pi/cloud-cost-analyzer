@@ -99,6 +99,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: cluster_env
             type: nominal
             limit: 12
@@ -130,6 +131,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: category
             type: nominal
             limit: 10
@@ -169,6 +171,7 @@ rows:
             limit: 15
             sort: "-x"
           color:
+            legendOrientation: right
             field: category
             type: nominal
         width: 6
@@ -196,6 +199,7 @@ rows:
             field: total_cost
             type: quantitative
           color:
+            legendOrientation: right
             field: environment
             type: nominal
         width: 8

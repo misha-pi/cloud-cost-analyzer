@@ -36,6 +36,7 @@ rows:
             type: quantitative
             zeroBasedOrigin: true
           color:
+            legendOrientation: right
             field: service
             type: nominal
             limit: 10
@@ -61,6 +62,7 @@ rows:
             sort: "-x"
             limit: 15
           color:
+            legendOrientation: right
             field: provider
             type: nominal
         width: 5
