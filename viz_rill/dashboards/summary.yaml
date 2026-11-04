@@ -1,6 +1,6 @@
 # Cost summary for the leaders: one month at a time, GCP, MongoDB Atlas and AWS together. Has the
 # "Each service's cost by app" table of gcp_overview_service_app plus the MongoDB rows, the "Cost over time
-# by provider" chart of gcp_atlas_canvas and the "Kubernetes cost by workload" table of
+# by provider" chart of cloud_cost and the "Kubernetes cost by workload" table of
 # gcp_overview_service_app.
 type: canvas
 display_name: "Cost Summary"

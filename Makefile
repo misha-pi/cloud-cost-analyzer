@@ -267,7 +267,7 @@ demo: install-rill setup-connector-duckdb
 #what this does:
 # 1. load data incrementally
 # 2. starts Rill BI and opens in browser
-# The pages are written by hand (gcp_overview, gcp_overview_service_app, gcp_atlas_canvas, aws_cost, summary).
+# The pages are written by hand (gcp_overview, gcp_overview_service_app, cloud_cost, aws_cost, summary).
 run-all: install run-etl serve-duckdb
 
 
