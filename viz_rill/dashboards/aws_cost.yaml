@@ -4,7 +4,8 @@ type: canvas
 display_name: "AWS Cost"
 
 defaults:
-  time_range: rill-PM
+  time_range: P3M
+  comparison_mode: time
 
 rows:
   - items:
@@ -86,7 +87,7 @@ rows:
         width: 12
     height: 420px
 
-time_ranges: [rill-PM, rill-MTD, P3M, P6M, P12M]
+time_ranges: [P3M, P6M, P12M, rill-PM, rill-MTD]
 filters:
   enable: true
 
