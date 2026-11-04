@@ -27,7 +27,7 @@ Mode is controlled by `DLT_DESTINATION` environment variable (set in Makefile au
 
 ```
 1. EXTRACT (dlt incremental pipelines)
-   - pipelines/aws_pipeline.py → S3 CUR Parquet
+   - pipelines/aws_cost_explorer_pipeline.py → AWS Cost Explorer API → month files
    - pipelines/google_bq_incremental_pipeline.py → BigQuery billing export
    - pipelines/stripe_pipeline.py → Stripe API
 
@@ -36,7 +36,7 @@ Mode is controlled by `DLT_DESTINATION` environment variable (set in Makefile au
    - Cloud: → ClickHouse tables
 
 3. MODEL (Rill SQL models in viz_rill/models/)
-   - aws_costs.sql, gcp_costs.sql, stripe_revenue.sql
+   - aws_by_account/region/usage_type/tag.sql, gcp_costs.sql, stripe_revenue.sql
    - Models use {{ if .env.RILL_CONNECTOR }} to switch between DuckDB/ClickHouse
    - unified_cost_model.sql → UNION ALL with currency conversion
 
@@ -96,7 +96,6 @@ make serve-clickhouse     # Force ClickHouse mode
 
 ### Optional: Dynamic Dashboard Generation (local mode only)
 ```bash
-make aws-dashboards       # Normalize + generate AWS canvases
 ```
 Note: Dynamic generation only works with local Parquet files, not ClickHouse.
 
@@ -133,12 +132,11 @@ make demo                 # Run with sample data (no credentials needed)
 
 ### `.dlt/config.toml` - Pipeline Configuration
 All data source settings:
-- AWS: `[sources.aws_cur]` - S3 bucket, file glob, table name
+- AWS: `[sources.aws]` - Cost Explorer region, tag keys, Marketplace products (key in secrets.toml)
 - GCP: `[sources.gcp_billing]` - BigQuery dataset, table names
 - Stripe: `[sources.stripe]` - Initial start date
 - Destinations: `[destination.filesystem]`, `[destination.clickhouse]`
 
-**Important**: When changing `table_name` in `[sources.aws_cur]`, update parquet path in `viz_rill/models/aws_costs.sql`.
 
 ### `.dlt/secrets.toml` - Credentials (Not Committed)
 - AWS: `[sources.filesystem.credentials]` - access key, secret
@@ -160,13 +158,13 @@ olap_connector: duckdb  # or clickhouse
 ## Key Source Files
 
 ### Data Pipelines
-- `pipelines/aws_pipeline.py` - AWS CUR loader with merge deduplication
+- `pipelines/aws_cost_explorer_pipeline.py` - AWS Cost Explorer loader (one file per month, replaced while AWS revises it)
 - `pipelines/google_bq_incremental_pipeline.py` - GCP BigQuery incremental loader
 - `pipelines/stripe_pipeline.py` - Stripe revenue pipeline
 - `pipelines/helpers/stripe_analytics/` - Stripe helper modules
 
 ### Rill SQL Models
-- `viz_rill/models/aws_costs.sql` - AWS cost transformations with date extraction
+- `viz_rill/models/aws_by_*.sql` - AWS daily cost by account, region, usage type and tag
 - `viz_rill/models/gcp_costs.sql` - GCP billing with label flattening
 - `viz_rill/models/stripe_revenue.sql` - Stripe revenue model
 - `viz_rill/models/unified_cost_model.sql` - Multi-cloud union with currency conversion

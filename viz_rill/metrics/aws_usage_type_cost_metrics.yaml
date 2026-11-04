@@ -1,0 +1,35 @@
+# AWS cost and usage per service and usage type, from Cost Explorer (model: aws_by_usage_type)
+version: 1
+type: metrics_view
+
+display_name: AWS Cost by Usage Type
+model: aws_by_usage_type
+timeseries: date
+smallest_time_grain: "day"
+
+dimensions:
+  - name: provider
+    display_name: Provider
+    column: provider
+  - name: service
+    display_name: Service
+    column: service
+  - name: usage_type
+    display_name: Usage type
+    column: usage_type
+    description: "What was billed, e.g. TimedStorage-ByteHrs (S3 storage) or DataTransfer-Out-Bytes"
+  - name: usage_unit
+    display_name: Unit
+    column: usage_unit
+
+measures:
+  - name: total_net_cost
+    display_name: "Net cost"
+    expression: "SUM(net_cost)"
+    format_preset: currency_usd
+    valid_percent_of_total: true
+  - name: total_usage
+    display_name: "Usage"
+    description: "Usage quantity, in the usage type's unit"
+    expression: "SUM(usage_quantity)"
+    format_preset: humanize

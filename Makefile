@@ -93,6 +93,9 @@ clear-gcp:
 clear-atlas:
 	@sh scripts/clear_source.sh atlas_billing run-atlas
 
+clear-aws:
+	@sh scripts/clear_source.sh aws_costs run-aws
+
 clear-all: clear clear-clickhouse
 
 ## Connector switching helpers
@@ -130,9 +133,15 @@ set-connector-motherduck:
 	@echo "✅ Connector set to MotherDuck (cloud DuckDB)"
 
 
+# AWS cost from the Cost Explorer API: the current month, plus any month of the last 13 that has no file
+# yet or still has estimated days (the first run loads all 13). About $0.01 per request.
 run-aws: check-secrets
-	uv run python pipelines/aws_pipeline.py
+	uv run python pipelines/aws_cost_explorer_pipeline.py
 	echo "####################################################################"
+	@[ "$(SKIP_RILL_REFRESH)" = "1" ] || $(MAKE) --no-print-directory rill-refresh
+# Made-up AWS data in viz_rill/data/aws_costs (gitignored), no AWS key needed. `make demo` runs this.
+aws-demo-data:
+	uv run python scripts/aws_demo_data.py
 run-gcp: check-secrets
 	uv run python pipelines/google_bq_incremental_pipeline.py
 	echo "####################################################################"
@@ -162,11 +171,13 @@ atlas-demo-data:
 	uv run python scripts/generate_atlas_forecast_page.py
 
 #run dlt incremental loads
-# Pipelines we run. Add new sources here (upstream also ran run-aws and run-stripe).
-# Rill is refreshed once at the end, not after each source.
+# Pipelines we run. Add new sources here and in scripts/daily_load.sh (upstream also ran run-stripe).
+# Rill is refreshed once at the end, not after each source. This stops at the first failing source;
+# the daily load (scripts/daily_load.sh) runs each source on its own instead.
 run-etl: check-secrets
 	@$(MAKE) --no-print-directory run-gcp SKIP_RILL_REFRESH=1
 	@$(MAKE) --no-print-directory run-atlas SKIP_RILL_REFRESH=1
+	@$(MAKE) --no-print-directory run-aws SKIP_RILL_REFRESH=1
 	@$(MAKE) --no-print-directory rill-refresh
 
 # Rebuild Rill's models from newly loaded files. Rill does not notice new parquet files by itself, the
@@ -243,6 +254,7 @@ demo: install-rill setup-connector-duckdb
 	@echo "✅ Demo data copied successfully"
 	@PYTHON="uv run python" sh scripts/atlas_demo_data.sh
 	@uv run python scripts/generate_atlas_forecast_page.py
+	@uv run python scripts/aws_demo_data.py
 	@echo "✅ Connector set to DuckDB (local parquet files)"
 	@echo ""
 	@echo "Starting Rill dashboards with demo data..."
@@ -252,36 +264,15 @@ demo: install-rill setup-connector-duckdb
 	@rill start viz_rill || true
 	@$(MAKE) setup-connector-duckdb
 
-## AWS Advanced Analytics (CUR Wizard integration)
-aws-normalize:
-	@echo "Normalizing AWS CUR data..."
-	cd viz_rill && uv run python cur-wizard/scripts/normalize.py
-
-aws-generate-dashboards:
-	@echo "Generating AWS-specific Rill dashboards..."
-	cd viz_rill && uv run python cur-wizard/scripts/generate_rill_yaml.py \
-		--parquet data/normalized_aws.parquet \
-		--output-dir . \
-		--cost-col line_item_unblended_cost \
-		--dim-prefixes "product_,line_item_" \
-		--timeseries-col date
-
-aws-dashboards: aws-normalize aws-generate-dashboards
-	@echo "✅ AWS dashboards generated! Run 'make serve' to view them."
-
 #what this does:
 # 1. load data incrementally
-# 2. normalizes AWS cost reports and generates the AWS Rill dashboards
-# 3. starts Rill BI and opens in browser
-# The GCP pages are written by hand (gcp_overview, gcp_overview_service_app, gcp_atlas_canvas, summary).
-run-all: install run-etl aws-dashboards serve-duckdb
+# 2. starts Rill BI and opens in browser
+# The pages are written by hand (gcp_overview, gcp_overview_service_app, gcp_atlas_canvas, aws_cost, summary).
+run-all: install run-etl serve-duckdb
 
 
 
 ## Production / ClickHouse (writes directly to ClickHouse Cloud)
-run-aws-clickhouse:
-	DLT_DESTINATION=clickhouse uv run python pipelines/aws_pipeline.py
-	echo "####################################################################"
 run-gcp-clickhouse:
 	DLT_DESTINATION=clickhouse uv run python pipelines/google_bq_incremental_pipeline.py
 	echo "####################################################################"
@@ -290,7 +281,7 @@ run-stripe-clickhouse:
 	echo "####################################################################"
 
 # Run dlt incremental loads (production - clickhouse destination)
-run-etl-clickhouse: run-aws-clickhouse run-gcp-clickhouse run-stripe-clickhouse
+run-etl-clickhouse: run-gcp-clickhouse run-stripe-clickhouse
 	@echo "✅ ClickHouse ETL complete (data in ClickHouse Cloud)"
 
 # Initialize ClickHouse database (run once before first use)
@@ -304,9 +295,6 @@ ingest-normalized-clickhouse:
 	DLT_DESTINATION=clickhouse uv run python pipelines/ingest_normalized_pipeline.py
 
 ## MotherDuck (writes directly to MotherDuck cloud DuckDB)
-run-aws-motherduck:
-	DLT_DESTINATION=motherduck uv run python pipelines/aws_pipeline.py
-	echo "####################################################################"
 run-gcp-motherduck:
 	DLT_DESTINATION=motherduck uv run python pipelines/google_bq_incremental_pipeline.py
 	echo "####################################################################"
@@ -315,7 +303,7 @@ run-stripe-motherduck:
 	echo "####################################################################"
 
 # Run dlt incremental loads (MotherDuck destination)
-run-etl-motherduck: run-aws-motherduck run-gcp-motherduck run-stripe-motherduck
+run-etl-motherduck: run-gcp-motherduck run-stripe-motherduck
 	@echo "✅ MotherDuck ETL complete (data in MotherDuck cloud)"
 
 serve-motherduck: setup-connector-motherduck
@@ -346,7 +334,7 @@ anonymize-clickhouse:
 	@echo ""
 
 # Complete cloud pipeline with anonymization
-# Note: Dynamic dashboard generation (aws-dashboards) requires local parquet files,
+# Note: AWS (Cost Explorer) only loads to the local files, not to ClickHouse,
 # so it's excluded from cloud mode. Static dashboards work with ClickHouse via models.
 run-all-cloud: check-secrets run-etl-clickhouse anonymize-clickhouse serve-clickhouse
 	@echo ""

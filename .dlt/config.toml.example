@@ -12,11 +12,6 @@ bucket_url = "viz_rill/data"  # Output directory for parquet files
 [destination.filesystem.loader_file_format]
 file_format = "parquet"
 
-# Internal filesystem source (usually not needed)
-[sources.filesystem]
-local_dir = "/path/to/your/local/dir"  # Update if using local filesystem source
-bucket_url = "https://s3.us-west-1.amazonaws.com"  # Update if needed
-
 # ============================================================
 # Pipeline Configuration (shared across all pipelines)
 # ============================================================
@@ -24,32 +19,15 @@ bucket_url = "https://s3.us-west-1.amazonaws.com"  # Update if needed
 pipeline_name = "cloud_cost_analytics"  # Name used by all pipelines
 
 # ============================================================
-# AWS Cost and Usage Report (CUR) Configuration
-# ============================================================
-[sources.aws_cur]
-# S3 bucket where AWS CUR exports are stored
-bucket_url = "s3://your-bucket-name"
-
-# Path pattern to your CUR parquet files
-# Example: "cur/YourReportName/data/**/*.parquet"
-file_glob = "cur/CUR-export-test/data/**/*.parquet"
-
-# Name for the output table (will appear in viz_rill/data/)
-# Keep alphanumeric and underscores only
-table_name = "cur_export_test_00001"
-
-# Output dataset name (default: aws_costs)
-dataset_name = "aws_costs"
-
-# Only load data from this date onwards (filters by file modification date)
-# Format: YYYY-MM-DD
-initial_start_date = "2025-09-01"
-
-# Directory paths for data processing
-# Input directory: where AWS parquet files are loaded by the pipeline
-# Normalized directory: where normalized parquet files are written
-input_data_dir = "viz_rill/data/aws_costs/cur_export_test_00001"
-normalized_data_dir = "viz_rill/data/aws_costs"
+# AWS cost from the Cost Explorer API (pipelines/aws_cost_explorer_pipeline.py, `make run-aws`).
+# The key goes in .dlt/secrets.toml under [sources.aws] (aws_access_key_id, aws_secret_access_key);
+# it only needs the ce:GetCostAndUsage permission.
+[sources.aws]
+region_name = "us-east-1"  # Cost Explorer's API region, whatever region the AWS resources are in
+# Cost allocation tag keys to load cost by (Billing > Cost allocation tags; only active tags have cost).
+tag_keys = []
+# Marketplace products billed through AWS, shown as their own provider "<name> (via AWS)".
+marketplace_services = ["Vercel"]
 
 # ============================================================
 # GCP BigQuery Billing Export Configuration

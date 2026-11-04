@@ -1,7 +1,8 @@
 -- @materialize: true
 -- Materialized: stored once as a DuckDB table (rebuilt when the data is refreshed, see `make rill-refresh`).
 -- Cost per day, app and service for the "Cost Summary" page (DuckDB mode only): the GCP rows of
--- gcp_app_costs plus MongoDB Atlas, like the "Atlas" and "Atlas Pro" rows of billing-helper's monthly sheet.
+-- gcp_app_costs plus MongoDB Atlas, like the "Atlas" and "Atlas Pro" rows of billing-helper's monthly sheet,
+-- plus AWS per service in its own app column: there are no rules yet for which AWS account or tag is which app.
 --
 -- MongoDB: each Atlas project goes to the app whose name is in the project name, spaces removed
 -- ("Map of Pi - Production" -> mapofpi), with the same app list and order as the GCP name rules, then
@@ -55,3 +56,9 @@ UNION ALL
 SELECT p.month_start AS date, s.app, 'MongoDB Pro' AS service_name, 'MongoDB Atlas' AS provider, p.net_cost * s.share AS net_cost
 FROM mongodb_pro p
 JOIN mongodb_share s USING (month_start)
+
+UNION ALL
+
+SELECT date, 'AWS (not split by app)' AS app, service AS service_name, provider, SUM(net_cost) AS net_cost
+FROM {{ ref "aws_by_account" }}
+GROUP BY ALL

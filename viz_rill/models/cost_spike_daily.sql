@@ -25,8 +25,9 @@ WITH daily AS (
 ),
 
 as_of AS (
+  -- Marketplace products bought through AWS are billed on a few days a month, so they don't set the date.
   SELECT MIN(latest_day) - 1 AS as_of_date
-  FROM (SELECT provider, MAX(date) AS latest_day FROM daily GROUP BY provider)
+  FROM (SELECT provider, MAX(date) AS latest_day FROM daily WHERE provider NOT LIKE '% (via AWS)' GROUP BY provider)
 ),
 
 top_series AS (
