@@ -14,14 +14,14 @@ dimensions:
   - name: series
     display_name: Service / cluster
     column: series
-    description: "Top 5 GCP services or Atlas project / clusters of the last 30 days; the rest is Other"
+    description: "Top 5 GCP or AWS services, or Atlas project / clusters, of the last 30 days; the rest is Other"
 
 measures:
   # Per day, so a week or month grain shows the average day instead of a sum of 7 or 30 days.
   - name: daily_cost
     display_name: "Daily cost"
     expression: "SUM(cost) / NULLIF(COUNT(DISTINCT date), 0)"
-    description: "GCP net cost after credits plus Atlas billed cost, per day"
+    description: "GCP and AWS net cost after credits plus Atlas billed cost, per day"
     format_preset: currency_usd
   - name: cost_7d_avg
     display_name: "7-day average"
