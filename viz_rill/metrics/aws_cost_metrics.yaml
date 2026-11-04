@@ -31,13 +31,13 @@ measures:
     valid_percent_of_total: true
   - name: aws_net_cost
     display_name: "AWS cost"
-    description: "Net cost of AWS's own services (Marketplace products left out)"
+    description: "Net cost of AWS's own services (Vercel, bought through AWS Marketplace, left out)"
     expression: "SUM(CASE WHEN provider = 'AWS' THEN net_cost ELSE 0 END)"
     format_preset: currency_usd
-  - name: marketplace_cost
-    display_name: "Marketplace (e.g. Vercel)"
-    description: "Marketplace products billed through AWS"
-    expression: "SUM(CASE WHEN provider <> 'AWS' THEN net_cost ELSE 0 END)"
+  - name: vercel_cost
+    display_name: "Vercel"
+    description: "Vercel, bought through AWS Marketplace and billed on the AWS bill"
+    expression: "SUM(CASE WHEN provider = 'Vercel (via AWS)' THEN net_cost ELSE 0 END)"
     format_preset: currency_usd
   - name: estimated_share
     display_name: "Share still estimated"

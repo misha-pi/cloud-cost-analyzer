@@ -1,4 +1,4 @@
-# GCP, MongoDB Atlas, AWS and AWS Marketplace cost side by side (model: cloud_provider_costs).
+# GCP, MongoDB Atlas, AWS and Vercel cost side by side (model: cloud_provider_costs).
 # Time charts follow the time grain picked in the time filter (day, week, month, year).
 type: canvas
 display_name: "Cloud Cost: GCP, MongoDB Atlas, AWS and Vercel"
@@ -13,14 +13,14 @@ rows:
           content: |
             Total cloud cost by provider. GCP and AWS are net cost after credits (as on their own pages); MongoDB
             Atlas is the billed line item cost. Atlas is billed through the GCP Marketplace and counted once, as Atlas;
-            products bought through AWS Marketplace are shown as their own provider, e.g. **Vercel (via AWS)**.
+            **Vercel (via AWS)**, bought through AWS Marketplace and billed on the AWS bill, is its own provider.
             **Project / cluster / account** is the GCP project, the Atlas project and cluster, or the AWS account.
         width: 12
     height: 100px
   - items:
       - kpi_grid:
           metrics_view: cloud_provider_cost_metrics
-          measures: [total_cost, gcp_cost, atlas_cost, aws_cost, marketplace_cost]
+          measures: [total_cost, gcp_cost, atlas_cost, aws_cost, vercel_cost]
           comparison: [delta, percent_change]
         width: 12
     height: 160px

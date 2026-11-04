@@ -12,22 +12,22 @@ rows:
   - items:
       - markdown:
           content: |
-            AWS cost from Cost Explorer for all linked accounts, net of credits and discounts. Products bought
-            through AWS Marketplace (e.g. **Vercel**) are counted apart from **AWS cost**. The last few days are
-            **estimated** until AWS finalises them.
+            AWS cost from Cost Explorer for all linked accounts, net of credits and discounts. **Vercel**, bought
+            through AWS Marketplace and billed on the AWS bill, is counted apart from **AWS cost**. The last few days
+            are **estimated** until AWS finalises them.
         width: 12
     height: 80px
   - items:
       - kpi_grid:
           metrics_view: aws_cost_metrics
-          measures: [aws_net_cost, marketplace_cost, estimated_share]
+          measures: [aws_net_cost, vercel_cost, estimated_share]
           comparison: [delta, percent_change]
         width: 12
     height: 160px
   - items:
       - stacked_bar:
           metrics_view: aws_service_daily_metrics
-          title: "AWS cost over time by service (top 10 and Other; Marketplace products left out)"
+          title: "AWS cost over time by service (top 10 and Other; Vercel left out)"
           x:
             field: date
             type: temporal
