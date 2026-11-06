@@ -4,8 +4,8 @@
 --
 -- Only complete Monday-Sunday weeks are used. A usage day is complete from the first export day (rows
 -- for earlier usage days only partly arrived before the export history starts) to the day before the
--- latest export day (that day is still being filled in). Only day rows are used: they cover the latest
--- 3 months, older months are stored per month.
+-- latest export day (that day is still being filled in). Only day rows are used: they cover the current
+-- month and the 3 before it, older months are stored per month.
 --
 -- The top 20 SKUs are ranked by net cost over those weeks. A SKU is identified by its SKU id and named
 -- "service / SKU description". gcp_costs already leaves out MongoDB Atlas billed through the Marketplace.

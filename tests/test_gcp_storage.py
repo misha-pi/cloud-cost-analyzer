@@ -94,21 +94,23 @@ class StoreTest(unittest.TestCase):
 
     def test_months_older_than_daily_months_are_rolled_up(self):
         self.add([
-            row(utc(2026, 6, 3), utc(2026, 6, 4), 1.0),
-            row(utc(2026, 6, 20), utc(2026, 6, 21), 2.0),
-            row(utc(2026, 7, 5), utc(2026, 7, 6), 4.0),
-            row(utc(2026, 8, 5), utc(2026, 8, 6), 8.0),
-            row(utc(2026, 9, 5), utc(2026, 9, 6), 16.0),
+            row(utc(2026, 5, 3), utc(2026, 5, 4), 1.0),
+            row(utc(2026, 5, 20), utc(2026, 5, 21), 2.0),
+            row(utc(2026, 6, 5), utc(2026, 6, 6), 4.0),
+            row(utc(2026, 7, 5), utc(2026, 7, 6), 8.0),
+            row(utc(2026, 8, 5), utc(2026, 8, 6), 16.0),
+            row(utc(2026, 9, 5), utc(2026, 9, 6), 32.0),
         ])
-        self.assertEqual(sorted(p.name for p in (self.root / "daily").iterdir()), ["2026-07", "2026-08", "2026-09"])
+        self.assertEqual(sorted(p.name for p in (self.root / "daily").iterdir()),
+                         ["2026-06", "2026-07", "2026-08", "2026-09"])
         self.assertEqual(self.query("SELECT grain, date, cost, row_count FROM ROWS", self.store._monthly_files()),
-                         [("month", dt.date(2026, 6, 1), 3.0, 2)])
+                         [("month", dt.date(2026, 5, 1), 3.0, 2)])
         # A late row for a rolled-up month is added to its month file.
-        self.add([row(utc(2026, 6, 30), utc(2026, 9, 7), 32.0)])
+        self.add([row(utc(2026, 5, 31), utc(2026, 9, 7), 64.0)])
         self.assertEqual(self.query("SELECT date, cost, row_count FROM ROWS", self.store._monthly_files()),
-                         [(dt.date(2026, 6, 1), 35.0, 3)])
-        self.assertFalse((self.root / "daily" / "2026-06").exists())
-        self.assertEqual(self.stored("SELECT SUM(cost) FROM ROWS"), [(63.0,)])
+                         [(dt.date(2026, 5, 1), 67.0, 3)])
+        self.assertFalse((self.root / "daily" / "2026-05").exists())
+        self.assertEqual(self.stored("SELECT SUM(cost) FROM ROWS"), [(127.0,)])
 
     def test_hourly_file_keeps_the_last_24_hours_of_rows(self):
         self.add([row(utc(2026, 10, 1, 1), utc(2026, 10, 1, 2), 1.0)])

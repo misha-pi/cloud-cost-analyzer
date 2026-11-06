@@ -69,8 +69,9 @@ MEASURES = ["cost", "credits_total", "net_cost", "cost_at_list", "usage__amount"
 _NOT_DIMENSIONS = set(MEASURES) | {"usage_start_time", "export_time"}
 DIMENSIONS = [name for name, _ in FIELDS if name not in _NOT_DIMENSIONS] + list(LABEL_COLUMNS.values())
 
-# Months kept per day; older months are kept per month.
-DAILY_MONTHS = 3
+# Months kept per day (the current month and the 3 before it, so always at least 90 full days); older
+# months are kept per month.
+DAILY_MONTHS = 4
 # Billing rows kept one by one, counted back from the latest export_time.
 HOURLY_WINDOW = "24 HOURS"
 
