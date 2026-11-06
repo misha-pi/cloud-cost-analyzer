@@ -1,8 +1,8 @@
 -- 12-month GCP cost estimates for the GCP Spend Forecast page (DuckDB mode only): one row for the total
 -- (sku_rank 0) and one per top-20 SKU, from the complete weeks in gcp_forecast_weekly.
 --
--- Past 12 months (estimate): average weekly net cost x 52. Only about 8 weeks of billing data exist, so
--- this assumes the rest of the year cost what these weeks cost.
+-- Past 12 months (estimate): average weekly net cost x 52. Only the weeks stored day by day (at least 90 days)
+-- are used, so this assumes the rest of the year cost what these weeks cost.
 -- Next 12 months (projection): the past-12-month estimate x 1.1 (10% growth allowance, agreed for the
 -- contract talks).
 SELECT

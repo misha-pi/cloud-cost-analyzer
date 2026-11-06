@@ -1,4 +1,4 @@
-# GCP spend report for the contract talks: weekly net cost over the ~60 days the billing export keeps,
+# GCP spend report for the contract talks: weekly net cost over the days stored day by day (at least 90),
 # the top 20 SKUs, and 12-month estimates. Data: gcp_forecast_weekly and gcp_forecast_estimates.
 # The 20 SKU charts are the same chart filtered to one rank each.
 type: canvas
@@ -14,8 +14,8 @@ rows:
           content: |
             ### GCP spend: past 12 months (estimate) and next 12 months (projection)
             GCP net cost after credits, for **all GCP projects** on the billing account (MongoDB Atlas bought
-            through the GCP Marketplace is left out; it is on the MongoDB Atlas report). The billing export keeps
-            only about 60 days, so everything here comes from the complete Monday-Sunday weeks
+            through the GCP Marketplace is left out; it is on the MongoDB Atlas report). Daily cost is kept for the
+            current month and the 3 before it, so everything here comes from the complete Monday-Sunday weeks
             **{{ metrics_sql "SELECT weeks_used FROM gcp_forecast_estimate_metrics WHERE line_type = 'total'" }}**.
 
             **How the numbers are estimated**
