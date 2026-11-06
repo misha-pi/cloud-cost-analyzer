@@ -28,6 +28,19 @@ COST_MULTIPLIER_MIN=5.0 COST_MULTIPLIER_MAX=10.0 uv run python scripts/anonymize
 
 See [../ANONYMIZATION.md](../ANONYMIZATION.md) for complete anonymization guide.
 
+## Reports
+
+### `gcp_sku_estimate_csv.py`
+GCP 12-month cost estimates for every SKU as a CSV: the All GCP row, one row per SKU with non-zero net cost
+(ranked by cost) and a total row. Same rules as the GCP Spend Report page (average week x 52, x 1.1 for the
+next 12 months, NK suggested = 40%), over all complete days in the daily billing data. Reads `gcp_costs`
+from a running Rill.
+
+**Usage (on costgenie, or locally through the SSH tunnel to its Rill):**
+```bash
+uv run python scripts/gcp_sku_estimate_csv.py --out gcp_sku_estimates.csv
+```
+
 ## ClickHouse Management
 
 ### `init_clickhouse.py`
